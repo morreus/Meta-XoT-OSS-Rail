@@ -1,0 +1,10 @@
+{
+  "name": "metaxotrail",
+  "version": "1.0.0",
+  "description": "Guides AI coding agents through a scored, enforced development process, enabling non-developers to build autonomously without technical decision-making.",
+  "author": {
+    "name": "Stamatios"
+  },
+  "license": "Apache-2.0",
+  "displayName": "Meta-XoT-OSS-Rail"
+}

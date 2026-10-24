@@ -1,0 +1,14 @@
+{
+  "name": "metaxotrail",
+  "description": "The marketplace for Meta-XoT-OSS-Rail: one plugin, `metaxotrail`, at this repository's root.",
+  "owner": {
+    "name": "Stamatios"
+  },
+  "plugins": [
+    {
+      "name": "metaxotrail",
+      "source": "./",
+      "description": "MetaXoTRail — the gate-enforced development pipeline; see plugin.json."
+    }
+  ]
+}
