@@ -122,12 +122,13 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
   show why: how the code worked before, the options that were weighed, the plan and its assumptions,
   what each review found and how it was fixed. They are committed with each part. The run's history
   adds every step, who closed it, your answers, and what you approved or overrode yourself.
-- **It stays on your machine.** The plugin's own code sends nothing over the network.
+- **The plugin sends nothing.** Its own code sends nothing over the network; Claude Code works as it
+  always does, sending what you write and what Claude reads to Anthropic's model.
 
 ### Who it is for, and the problems it solves
 
 - **You do not know the steps of a proper development process.** You tried building with Claude Code,
-  and it did not get there — or it built something that worked once but was not robust, not tested,
+  and it did not finish the job — or it built something that worked once but was not robust, not tested,
   or not built the way software should be. Meta-XoT-OSS-Rail knows the steps and plays every one of
   them: the code is studied before it is changed, the change is planned before it is built, and every
   part is tested and reviewed before the next one starts.
@@ -135,8 +136,8 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
   ask which library, which pattern, which design — technical questions that need a specialist. Here
   those decisions stay with the process and its reviews. You are asked only about what the work should
   do, in plain words, with the options laid out and one recommended.
-- **You can set the guardrails yourself, but keeping them costs you your day.** You sit over the
-  agent, checking that it did not skip a step or a test. And when you let it run on its own, it starts
+- **You can set the guardrails yourself, but keeping them costs you your day.** You keep
+  checking the agent, to be sure it did not skip a step or a test. And when you let it run on its own, it starts
   skipping steps and controls. Here the guardrails are hooks: they hold whether you are watching or
   not, and Claude cannot end its turn before the work is really done.
 - **You have an idea, and you want a solid first version of it.** One request goes in; what comes out
@@ -352,7 +353,8 @@ run; it is not in your menu.
   `metaxotrail <metaxotrail@localhost>`. It takes **everything git does not ignore** (`git add -A`) —
   the part's code, the run's documents, and any changes of yours not yet committed. It is never pushed.
 
-**The network.** The plugin's own code sends nothing over it. Its mapping and planning steps ask
+**The network.** The plugin's own code sends nothing over it. Claude Code works as it always does:
+what you write and what Claude reads go to Anthropic's model. Its mapping and planning steps ask
 Claude to search the web, as Claude Code can do in any session.
 
 ### Limits
