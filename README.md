@@ -114,6 +114,12 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
   do — never which library, pattern or code. Each question is multiple choice: options Claude prepared
   from its own study of the project, their pros and cons, and a recommendation. You click; you do not
   have to write.
+- **Risky actions wait for you.** Some decisions are too important to leave to the agent: overriding
+  the process (closing, reopening or sending back a step on your own authority), ending a run
+  before it is finished, and commands that would delete folders or undo finished work. During a run,
+  Claude cannot take any of them by itself. They happen only when you approve them — and your approval
+  covers that one action only. Undoing work already saved in git is refused during a run, even with your
+  approval; it is possible again once the run has ended.
 - **Problems are found where they start.** A review that finds a wrong plan sends the work back to
   the plan, and everything built on it loses its points until it is done again.
 - **Finished work stays finished.** Once a part is built and reviewed, its code is frozen until it is
