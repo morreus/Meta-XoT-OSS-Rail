@@ -417,6 +417,9 @@ would like to discuss: say what you typed, what happened, what you expected, and
 version. A pull request is welcome as a suggestion too, but it cannot be merged here — please open an
 issue for it instead.
 
+To report a security problem, use **Report a vulnerability** on the repository's **Security and
+quality** tab, not a public issue.
+
 ### Support
 
 Meta-XoT-OSS-Rail is free to use, at home or at work, under the Apache 2.0 licence. If it helps you,
