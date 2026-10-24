@@ -425,8 +425,8 @@ quality** tab, not a public issue.
 ### Support
 
 Meta-XoT-OSS-Rail is free to use, at home or at work, under the Apache 2.0 licence. If it helps you,
-star the repository or [buy me a coffee](https://ko-fi.com/stamatismetaxotos). For questions, the full
-suite, or working together, contact the author on [LinkedIn](https://www.linkedin.com/in/smetaxotos).
+star the repository, or share a coffee with the author on [Ko-fi](https://ko-fi.com/stamatismetaxotos).
+For questions, the full suite, or working together, contact the author on [LinkedIn](https://www.linkedin.com/in/smetaxotos).
 
 ### Licence
 
