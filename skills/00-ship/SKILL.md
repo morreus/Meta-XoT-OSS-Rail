@@ -111,20 +111,21 @@ where the step skills write when they are used without a run. Look, then propose
 | milestones already finished | step 30, naming the finished milestones |
 | a milestone's tests run, its results in `docs/test_results_<slug>.md` | step 51 — the review of the results, naming the finished milestones or `none`; the results migrated into `TEST_RESULTS.md` under rule 3 |
 
-### What the operator sees — one business line and the sheet
+### What the operator sees — a short briefing and the sheet
 
 Everything above is yours to work out; the operator is shown the conclusions. Send **one message**:
-**one business line** and **the sheet** (`AskUserQuestion`), which **one click** answers. Write
-**nothing before the sheet** — not what you are checking, not what you found; never *I'll look at
-what's on disk first* — and put the business line in the sheet question's own text, so it is on the
-sheet every time:
+**a short briefing** in the chat (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask") and
+**the sheet** (`AskUserQuestion`), which **one click** answers. The briefing says what you understood, what
+earlier work there is, in plain words, and what each start choice means — a few lines; never what you are
+checking, never *I'll look at what's on disk first*. The business line stays in the sheet question's own text,
+so it is on the sheet every time:
 *We are building: <what, in their words>. How do we start?*
 
 **They may have no experience of MetaXoTRail or of how software is built** — MetaXoTRail is there to help them build
 something — so what they are shown is written for them: plain words, and what happens next said **in the
 order they will see it**. Step numbers, skill names, *run*, *chain*, *full*, *lite*, *adopt*, *map*,
 *ticket*, *milestone*, *reviewer*, *references*, line numbers, *on disk*, file names, commands and
-settings stay in these instructions and never reach the sheet. Say instead: *Claude studies the project and writes down how it works* (the map), *plans
+settings stay in these instructions and never reach the briefing or the sheet. Say instead: *Claude studies the project and writes down how it works* (the map), *plans
 the change* (the plan), *builds and tests it one part at a time* (the milestones), *you are asked
 before each important choice*; *the notes and the plan we made* (an adopted document); *the first
 part of the plan* (M1); *your notes match the code* (the references are right); *a second Claude,
@@ -175,7 +176,7 @@ starting from nothing, checks them* (an independent review).
   words and its description saying what it does and what it leaves.
 
 The assessment of an adopted document (below) is shown **only when adopting**, in **at most three
-lines** — three short sentences — in that option's description: what is solid, what is thin, what you
+lines** — three short sentences — in the briefing: what is solid, what is thin, what you
 could not check.
 Setup the operator did not ask about — which files you read, which commands you will run, `init`,
 setting files aside, the settings file, how the pipeline works — **is not narrated**. A reply under
@@ -191,6 +192,9 @@ without describing it; the next thing they see is the first stage's work, in pla
 
 For example, in a project with nothing in it yet:
 
+> The briefing, in the chat — *You want a CSV export for the orders page. There is no earlier work on this,
+> so Claude starts from the beginning.*
+>
 > The sheet, one question — *We are building: a CSV export for the orders page. There is no earlier
 > work on this. How do we start?*
 > - **Start fresh (Recommended)** — Claude first studies the project and writes down how it works,
@@ -201,11 +205,15 @@ For example, in a project with nothing in it yet:
 
 And where the last attempt left a plan that was checked:
 
+> The briefing, in the chat — *You want the CSV export for the orders page, as we discussed. The plan from last
+> time has been checked. Solid: each part says when it is done and how it is tested. Not checked: the largest
+> export it allows. Using it, Claude builds its first part next; starting fresh, Claude studies the project
+> again.*
+>
 > The sheet, one question — *We are building: the CSV export for the orders page, as we discussed.
 > How do we start?*
 > - **Use the plan we made (Recommended)** — the plan from last time has been checked; Claude
->   builds its first part next. Solid: each part says when it is done and how it is tested. Not
->   checked: the largest export it allows.
+>   builds its first part next.
 > - **Start fresh** — the earlier work is kept, and Claude begins again by studying the project.
 > - **Tell Claude more first** — add details about what you want built. Nothing starts until you
 >   choose again.
@@ -346,6 +354,6 @@ exactly:
 
 ## Suggested `/goal` — paste this one line, nothing else
 ```
-/goal Deliver «FEATURE» following the 00-ship skill — read it FIRST. Step 1: do STEP 0 of that skill — show me its sheet, with nothing written before it, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init full`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. DONE only when `pipeline.py status` says the chain is complete and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 40 turns if blocked.
+/goal Deliver «FEATURE» following the 00-ship skill — read it FIRST. Step 1: do STEP 0 of that skill — brief me in the chat, then show me its sheet, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init full`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. DONE only when `pipeline.py status` says the chain is complete and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 40 turns if blocked.
 ```
 Replace «FEATURE».

@@ -182,9 +182,9 @@ writes as its own is one LOW, *not settled; the plan decides it*.
 1. **Evidence quality** — unsupported, mis-cited, or stale claims you found while spot-checking. "No repo evidence" where that's the honest state.
 2. **Coverage / correctness** — entry points, data/state flow, files/symbols, stack-specific specifics: what did your Phase 1 dig surface that the map missed or got wrong?
 3. **Prior art** — existing patterns/solutions the map should reuse but didn't find.
-4. **Unknowns & assumptions — honesty** — anything marked UNKNOWN that's actually discoverable (lazy unknown); confidence levels not justified by evidence; Low/Med-confidence items that can't be validated and must become **questions**, not silent assumptions.
+4. **Unknowns & assumptions — honesty** — anything marked UNKNOWN that's actually discoverable (lazy unknown); confidence levels not justified by evidence; Low/Med-confidence items that can't be validated and must become **questions** when they are about what the work should do — a technical one is settled by a check in the plan, not a question — not silent assumptions.
 5. **Project-risk touchpoints** — CLAUDE.md / stack invariants, secrets, or irreversible/production operations this change touches that the map failed to surface.
-6. **The map's clarifying questions** — are they the right ones (only what's truly unanswerable from evidence)? Any that ARE answerable from the repo and should be removed and answered now?
+6. **The map's clarifying questions** — are they the right ones (only what's truly unanswerable from evidence)? Any that ARE answerable from the repo and should be removed and answered now? If the work needs a stack the project does not have and none was given: was it asked last, on its own, with three options (or fewer, merged as §9 allows), each price with its source?
 7. **Questions YOU would add** — your own list of what must be answered before planning can start. Be specific.
 
 ## Where your review goes

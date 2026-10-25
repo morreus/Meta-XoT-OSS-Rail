@@ -1,11 +1,21 @@
 # Meta-XoT-OSS-Rail
 
-Vibe coding on rails. Meta-XoT-OSS-Rail guides coding agents through a scored, enforced development
-process — so non-developers can move from idea to working software without being stopped for
-technical decisions.
+*Vibe coding on rails.*
 
-It is a plugin for [Claude Code](https://code.claude.com). Its name, and the start of every command,
-is `metaxotrail`.
+Meta-XoT-OSS-Rail is a free, open-source plugin for [Claude Code](https://code.claude.com). It turns a
+simplified software development process into a game with a score — one number per step, together a
+vector — and makes that score the agent's goal. So the agent does not stop at writing the code: it takes
+your request through every step of the process to a finished result, without skipping one, and without
+you having to set guardrails by hand.
+
+You describe what you want, and it takes the work all the way to the end — study, plan, implement and
+test — by itself, pausing only to ask you what is yours to decide: business questions, and risky actions
+such as deleting files and folders or overriding the process. It does this through 18 skills, 6 hooks and
+more than 15 code files. Technical decisions are made by the agent, to fit your requirements and needs
+— except a development stack the work needs and your project does not have, which Claude proposes in
+business terms for you to choose.
+
+Its name, and the start of every command, is `metaxotrail`.
 
 ## Contents
 
@@ -14,12 +24,13 @@ is `metaxotrail`.
   [why it works](#why-it-works) · [the name](#the-name)
 - **[Why use it](#why-use-it):** [what you get](#what-you-get) ·
   [who it is for](#who-it-is-for-and-the-problems-it-solves) · [what it is built for](#what-it-is-built-for) ·
-  [the full suite](#the-full-suite)
+  [is that all?](#is-that-all)
 - **[Getting started](#getting-started):** [what you need](#what-you-need) · [install](#install) ·
   [before your first run](#before-your-first-run) · [a first run](#a-first-run) ·
   [your answers](#your-answers) · [examples](#examples)
 - **[How a run works](#how-a-run-works):** [the steps](#the-steps) ·
   [when something goes wrong](#when-something-goes-wrong) · [when the run is finished](#when-the-run-is-finished)
+- **[Using the skills on their own](#using-the-skills-on-their-own)**
 - **[Reference](#reference):** [the commands](#the-commands) ·
   [what it changes on your machine](#what-it-changes-on-your-machine) · [limits](#limits) ·
   [updating](#updating) · [uninstalling](#uninstalling)
@@ -40,7 +51,7 @@ the feature correctly is what winning looks like.
 This is the backbone of the whole design, and it works the way Claude Code's `/goal` command does: the
 model keeps working until its goal is met. But the goal set for the model is not "finish this task".
 The task is still what the work is for; the goal is to reach the highest possible score in the process
-that delivers it. The run ends only when the score reaches its target. The `00-ship` skill also carries a
+that delivers it. The run ends only when the score reaches its target, or when you choose to end it. The `00-ship` skill also carries a
 ready `/goal` line: it names the task, but its finish line is the full score, not the task.
 
 The game is the development process, turned into rules a machine enforces:
@@ -82,8 +93,8 @@ pipeline keeps a copy of that document as the reviewer saw it, where Claude cann
 ### Why it works
 
 The agent does not decide when the work is done; the score does. Every step is played the same
-way every time, and every point has a record behind it. Generative AI, used this way, becomes
-predictable: the same process, the same checks, the same proof, whatever is being built.
+way every time, and every point has a record behind it. The way the work is done becomes predictable:
+the same process, the same checks, the same proof, whatever is being built.
 
 ### The name
 
@@ -96,7 +107,7 @@ describe what the plugin does, once it is split into parts:
   where a separate guide steers a language model's thinking. This plugin is **not** that method, but it
   takes the same idea: something outside the agent should guide it. Here the guide is a score. The
   process becomes a vector, one number per step, and the numbers rise only as steps are completed and
-  pass their reviews. Each number has a set maximum. The run ends only when all of them reach it, and
+  pass their reviews. Each number has a set maximum. The run ends only when all of them reach it, or when you choose to end it, and
   until then the agent may not stop, except to wait for your answer.
 - **OSS** means open-source software, under the Apache 2.0 licence.
 - **Rail** stands for the guardrails that keep the work on track. They stop the agent from changing its
@@ -110,16 +121,18 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
 
 - **The agent cannot mark its own work as done.** A step closes only on two records the pipeline
   compares, and every step is checked by a reviewer that did not write it.
-- **You answer business questions, not technical ones.** Claude asks only about what the work should
-  do — never which library, pattern or code. Each question is multiple choice: options Claude prepared
-  from its own study of the project, their pros and cons, and a recommendation. You click; you do not
+- **You answer business questions, not technical ones.** Claude asks about what the work should do —
+  never which library, pattern or code. If the work needs a development stack your project does not have
+  yet — language, framework, database, hosting, or a paid service — and you did not say which, Claude asks
+  you once to choose: the best fit, the cheapest and the easiest to maintain, in business terms, with a
+  recommendation. Each question is multiple choice: options Claude prepared
+  from its own study of the project, their pros and cons, and a recommendation. You click; you rarely
   have to write.
 - **Risky actions wait for you.** Some decisions are too important to leave to the agent: overriding
   the process (closing, reopening or sending back a step on your own authority), ending a run
-  before it is finished, and commands that would delete folders or undo finished work. During a run,
-  Claude cannot take any of them by itself. They happen only when you approve them — and your approval
-  covers that one action only. Undoing work already saved in git is refused during a run, even with your
-  approval; it is possible again once the run has ended.
+  before it is finished, and commands that would delete folders or throw away work not yet committed.
+  During a run, Claude cannot take any of them by itself. They happen only when you approve them — and
+  your approval covers that one action only.
 - **Problems are found where they start.** A review that finds a wrong plan sends the work back to
   the plan, and everything built on it loses its points until it is done again.
 - **Finished work stays finished.** Once a part is built and reviewed, its code is frozen until it is
@@ -127,7 +140,7 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
 - **You keep the story of the work, not only the code.** Git shows what changed. The run's documents
   show why: how the code worked before, the options that were weighed, the plan and its assumptions,
   what each review found and how it was fixed. They are committed with each part. The run's history
-  adds every step, who closed it, your answers, and what you approved or overrode yourself.
+  adds every step, your answers, and which steps rest on your word rather than a check.
 - **The plugin sends nothing.** Its own code sends nothing over the network; Claude Code works as it
   always does, sending what you write and what Claude reads to Anthropic's model.
 
@@ -140,8 +153,9 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
   part is tested and reviewed before the next one starts.
 - **You know how it should be done, but you are asked questions you cannot answer.** Claude stops to
   ask which library, which pattern, which design — technical questions that need a specialist. Here
-  those decisions stay with the process and its reviews. You are asked only about what the work should
-  do, in plain words, with the options laid out and one recommended.
+  those decisions stay with the process and its reviews. You are asked about what the work should do,
+  in plain words, with the options laid out and one recommended; the only technical choice you make is a
+  stack the work needs and your project does not have.
 - **You can set the guardrails yourself, but keeping them costs you your day.** You keep
   checking the agent, to be sure it did not skip a step or a test. And when you let it run on its own, it starts
   skipping steps and controls. Here the guardrails are hooks: they hold whether you are watching or
@@ -154,13 +168,13 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
 It is made for building features, one at a time. Seen a certain way, almost everything is a feature —
 a fix, a plan, a design, a new screen — so you could even build a whole project with it, one feature
 after another. For a whole product in one go, the author built a
-[full suite](#the-full-suite), a separate product with this plugin as its core.
+full suite, a separate product with this plugin as its core (see [Is that all?](#is-that-all)).
 
-### The full suite
+### Is that all?
 
-This plugin is the core engine: it builds one piece of working software at a time, through the
-whole process. The author's full suite goes further — from an idea, to phases and tasks, each one
-built with this engine. It is a separate product the author built. To ask about it, see
+This plugin is the core engine: it builds one piece of working software at a time, through the whole
+process. It does not plan a whole product. For that, the author built a full suite — from an idea, to
+phases and tasks, each one built with this engine. It is a separate product. To ask about it, see
 [Support](#support).
 
 ## Getting started
@@ -210,7 +224,8 @@ Open Claude Code in your project and type the command; do not paste it:
 /metaxotrail:00-ship add a CSV export to the orders page
 ```
 
-Claude looks at the project, writes one line about what will be built, and shows you a few choices:
+Claude looks at the project, writes a few lines about what will be built and what it found, and shows
+you a few choices:
 start fresh, use work from earlier, or tell Claude more first. Your click starts the run. From then
 on Claude plays the steps by itself, reports the score after each one, and stops only to ask you
 something that is yours to decide.
@@ -234,8 +249,9 @@ line for you to type. A reply such as "yes" or "do it" is not read as an answer.
 /metaxotrail:00-ship-lite change the "Save" button's label to "Save draft"
 ```
 
-**One step on its own, with no game.** Study how part of the project works, written into
-`docs/context_map_<name>.md`, with nothing enforced:
+**One step on its own, outside a run.** Claude studies how part of the project works and writes it into
+`docs/context_map_<name>.md`. No score is kept and nothing is enforced (see
+[Using the skills on their own](#using-the-skills-on-their-own)):
 
 ```text
 /metaxotrail:10-context-map how does sign-in work?
@@ -261,7 +277,8 @@ steps. It is for small, low-risk changes.
 
 How each review works:
 
-- **A fresh reviewer.** Each review runs in a fresh agent that starts without the conversation, and
+- **A fresh reviewer.** Each review that can pass a step runs in a fresh agent that starts without the
+  conversation, and
   works from the code and the run's records.
 - **Pass or fix.** If it finds nothing that blocks, the next step opens. If it finds problems, Claude
   fixes them and the review runs again, until it passes.
@@ -276,22 +293,23 @@ How each review works:
   until it passes.
 - **A review finds that an earlier step was wrong.** The run goes back to that step. Everything built
   on it loses its points and is done again.
-- **The game reaches a state no move can fix.** The pipeline stops and asks you, with the moves you
-  may order.
+- **The run reaches a point where no step can move forward.** The pipeline stops and asks you, with the
+  choices you have.
 - **The code changes after its review.** The step does not close. Either the change is a generated
   file, which belongs in `.gitignore`, or the code goes back to its build step — your decision.
 - **A file that looks like a secret is not in git.** The delivery of the part waits until you add it
   to `.gitignore` or commit it yourself.
-- **A command would undo or delete finished work.** During a run it is refused to Claude, and git refuses
-  its own undo commands from your terminal too. Outside a run, a command such as `git reset --hard` or `rm -r` asks you to
-  confirm first.
+- **A command would undo or delete finished work.** During a run it is refused to Claude. During a run,
+  from your own terminal, git refuses any command that would remove a commit (moving a branch back,
+  deleting it); it does not stop commands that throw away changes not yet committed, such as
+  `git checkout -- .` or `git clean`. Outside a run, such a command from Claude asks you to confirm first.
 
 **With you:**
 
 - **Claude needs a decision only you can make.** It asks once, on a short list of choices, and
-  waits. Nothing moves until you answer. If you write your own answer under "Other" on the list,
-  Claude takes it as your answer when the question asks for information; when it asks you to decide,
-  Claude turns it into a new option and asks again. Anything else you type in the chat is discussion:
+  waits. Nothing moves until you answer. If you write your own answer under "Other" on the list:
+  when Claude asked for information, it is your answer; when it asked you to choose, Claude tells you
+  how it reads your words and asks you to click. Anything else you type in the chat is discussion:
   Claude answers it, and the question still waits.
 - **You already have notes or a plan.** Claude can start from them, at the step they reach. The
   steps you skip are marked in the history as attested by you, not checked.
@@ -308,9 +326,41 @@ By then:
 - **Each part of the plan is a commit** in your project, `<part> delivered`, holding everything the
   run built for it, with the run's documents. **Nothing is pushed**: review the commits and push them
   yourself.
-- **The run's history is kept.** Ask Claude for the run's report to see every step, who closed it,
-  and what you approved or overrode.
+- **The run's history is kept.** Ask Claude for the run's report to see every step, your answers,
+  and which steps rest on your word rather than a check.
 - **To file the run away,** type `/metaxotrail:94-clean-process`.
+
+## Using the skills on their own
+
+You don't have to start a run to use the plugin. Fourteen of its skills also work on their own, in your
+daily work, whenever you want one step done well:
+
+| Skill | What it does on its own |
+|---|---|
+| `/metaxotrail:10-context-map` | studies how part of the project works and writes it down, with what is still unclear |
+| `/metaxotrail:11-review-map` | reviews that study, checking it against the code, the git history and the web |
+| `/metaxotrail:20-plan-impl` | plans a change: the options, the assumptions, the rules the result must meet, the parts |
+| `/metaxotrail:21-review-plan` | reviews the plan and looks for a simpler or safer way |
+| `/metaxotrail:30-implement-plan` | builds one part of the plan and checks it by running it |
+| `/metaxotrail:31-review-impl` | reviews what was built against the plan, file by file |
+| `/metaxotrail:40-test-plan` | plans the tests: normal, unusual and error cases, each with a measurable result |
+| `/metaxotrail:41-review-test-plan` | reviews the test plan for gaps and for tests that cannot fail |
+| `/metaxotrail:50-test-impl` | runs the tests one at a time and records what really happened |
+| `/metaxotrail:51-review-tests` | reviews the results, looking for passes that prove nothing |
+| `/metaxotrail:92-fix` | applies a review's findings |
+| `/metaxotrail:91-challenge` | takes a hard look at Claude's own last answer |
+| `/metaxotrail:90-explain` | explains a change or a decision in plain, business words |
+| `/metaxotrail:60-commit` | makes one commit, after checking the changes and scanning for secrets |
+
+Each brings the same method as in a run — the same instructions, the same reviews, and the extra
+guidance for Flutter, Python and Unity projects — but nothing is enforced: there is no score, and you
+decide when to stop. Each step still needs the document of the step before it (a plan needs a map), and says
+so if it is missing. A review you start yourself is Claude's own, unless you run
+it in a fresh agent.
+
+The other four commands belong to a run: `00-ship` and `00-ship-lite` start one, and `93-rollback` and
+`94-clean-process` work only inside one. The run versions of the steps (`-gated`) are used only inside a
+run and are not in your menu.
 
 ## Reference
 
@@ -320,7 +370,7 @@ By then:
 |---|---|
 | `/metaxotrail:00-ship` | the full chain |
 | `/metaxotrail:00-ship-lite` | the short chain, for small changes |
-| `/metaxotrail:10-context-map` … `/metaxotrail:51-review-tests` | each step on its own, outside a run |
+| `/metaxotrail:10-context-map` … `/metaxotrail:51-review-tests` | each step on its own, outside a run (see [Using the skills on their own](#using-the-skills-on-their-own)) |
 | `/metaxotrail:60-commit` | commit your changes after a secret scan, outside a run (a run commits each part itself) |
 | `/metaxotrail:90-explain` | a plain-language summary of a change |
 | `/metaxotrail:91-challenge` | a hard look at Claude's own last answer |
@@ -337,7 +387,7 @@ run; it is not in your menu.
 **Hooks.** It registers hooks on Claude Code's events:
 
 - before every `Bash`, `Write`, `Edit` and `NotebookEdit` call, a guard that refuses writes to the run's
-  records, to the plugin's own files and to `.git/` in every project, and, while a run is live, writes to the code
+  records, to the plugin's hook scripts and to `.git/` in every project, and, while a run is live, writes to the code
   while it is frozen and commands that would undo or delete finished work;
 - before every `Bash` call, a second guard that asks you to confirm commands such as
   `git reset --hard`, `git push --force` and `rm -r`;
@@ -369,8 +419,11 @@ Claude to search the web, as Claude Code can do in any session.
   past it.
 - It guards the project it runs in. Another project's records, named by their full path, are not
   guarded.
+- The git hook is not used in a git worktree, or where git is set to look for hooks elsewhere (such as
+  husky); an existing hook of the same name is replaced.
 - One run per project, in one window. You can open a second Claude Code window on the same project and
-  work there as usual: it is not gated, but the run's records and finished work stay guarded there too.
+  work there as usual: it is not gated, but the run's records, its documents and its commits stay guarded
+  there too.
   A second run in the same project is refused while the first is live.
 - A run takes much longer, and uses much more of your Claude usage, than asking Claude directly: every
   step has its own review agent, and a review with findings runs again after the fix.
@@ -386,6 +439,8 @@ What changed in each version is in [`CHANGELOG.md`](CHANGELOG.md). Start a new C
 afterwards.
 
 ### Uninstalling
+
+End any live run first: ask Claude to end it.
 
 ```bash
 claude plugin uninstall metaxotrail

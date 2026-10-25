@@ -16,6 +16,7 @@ ultrathink: Create an implementation plan for: $ARGUMENTS
 **REQUIRED**: the working document, `docs/context_map_<slug>.md`, holding the context map.
 - If it is missing or has no map: STOP. Run `/10-context-map $ARGUMENTS` first.
 - If present: read it NOW. It records the detected **stack**, the **Project-Risk Touchpoints**, and the unknowns/assumptions — reference them throughout.
+- When the run starts here, the work needs a stack the project does not have, and neither the agreed context nor the request names it, ask it before planning, in the form `10-context-map` §9 describes.
 
 If the stack rules aren't already in context, read `${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md` and `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md` (stack from the context map).
 
@@ -70,8 +71,8 @@ Exact steps; Expected vs Actual.
 
 **Rules:**
 - Low/Medium confidence = MUST validate before or during implementation.
-- If an assumption **cannot be validated from evidence**, do NOT silently assume it — surface it as a question to the user (per the "ask, don't assume" rule in _shared.md).
-- If any assumption is Low or Medium confidence → an Instrumentation Milestone (M0) is required.
+- If an assumption **cannot be validated from evidence**, do NOT silently assume it — surface it as a question to the user (per the "ask, don't assume" rule in _shared.md) — unless it is technical: then a check in M0 or the first milestone settles it, not a question.
+- If any assumption is Low or Medium confidence, or the stack is new → M0 is required.
 
 ### 4. Options Analysis
 For each (A: primary, B: alternative, C: simplest viable):
@@ -104,7 +105,14 @@ implemented, reviewed, test-planned, that plan reviewed, tested, results reviewe
 next one starts. Per-milestone testing is what stops a shipment reaching production with its
 acceptance test still unwritten.
 
-#### M0: Instrumentation (ONLY if Low/Med confidence assumptions exist — otherwise no M0 heading at all)
+#### M0: Set-up and instrumentation (when the stack is new, or Low/Med confidence assumptions exist — otherwise no M0 heading at all)
+**When the stack is new** — chosen in the map, not yet in the project — M0 sets it up first: everything the stack
+needs, downloaded and installed; the empty project created; the services connected (database, hosting, payments).
+**Before installing anything outside the project, show the user the full list — each tool, what it is for, where it
+goes — and wait for one approval of the whole list.** What only the user can do — create an account, pay a fee,
+copy a key — is asked as an action question, with everything needed to do it in the chat. **Exit of the set-up:** an
+empty app builds and runs where it will be used (the device, or the browser). Then M0 checks the plan's uncertain
+assumptions on that running base, as below.
 **Purpose:** Validate assumptions before committing to an approach.
 **Scope:** targeted debug logging at specific locations, using **the stack's instrumentation style from `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md`** (e.g. Python `logging` gated by a `--debug` flag; Unity `Debug.Log` under `#if UNITY_EDITOR || DEVELOPMENT_BUILD`; Flutter `debugPrint` under `kDebugMode`). Low-noise, event-based.
 **Verification:** trigger the action; observe output; confirm/reject assumptions.
@@ -153,7 +161,7 @@ they belong.
 
 ## What could go wrong
 
-**Pre-mortem (recommended option):** assume it shipped and broke. List the top 3 ways it failed (correctness, integration, scale, the project's risk touchpoints) and how the plan prevents each. If you can't prevent one, that's a question or a new milestone.
+**Pre-mortem (recommended option):** assume it shipped and broke. List the top 3 ways it failed (correctness, integration, scale, the project's risk touchpoints) and how the plan prevents each. If you can't prevent one, that's a question (when it is about what the work should do) or a new milestone.
 
 **Scale & edge cases** — populate from this project's risk surface — **the stack risk checklist in `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md`** plus the context map's **Project-Risk Touchpoints** — not a fixed list:
 | Risk (from stack rules / context map) | Consideration | How Addressed |
@@ -167,8 +175,8 @@ Always include: empty/null input, boundary values, concurrent access, failure/ro
 
 ## RULES
 1. **No guessing** — every claim needs evidence from codebase, git, or web.
-2. **Ask, don't assume** — anything you cannot validate becomes a question, not a silent assumption.
-3. **M0 is mandatory** if any assumption is Low/Medium confidence.
+2. **Ask, don't assume** — anything you cannot validate becomes a question when it is about what the work should do; a technical one becomes a check in M0, not a question.
+3. **M0 is mandatory** if any assumption is Low/Medium confidence, or the stack is new.
 4. **M1 must be tiny** — verifiable in < 5 minutes, minimal files.
 5. **Simplest solution wins** — justify any complexity.
 6. **Match existing patterns** — don't invent new conventions.

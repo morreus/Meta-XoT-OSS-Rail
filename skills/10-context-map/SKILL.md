@@ -63,7 +63,7 @@ is, what is unknown, and what the operator decides. It does not write how the ne
 its flow, its stages and their order, its checks, its schemas, or its assumptions about how the new
 code will behave: that is the plan's, and a design
 written here is reviewed twice, once as the map and again as the plan. A design decision that is the operator's —
-which of two designs they want — is still asked here, as a question; the map records their answer, and
+which of two designs of what the user sees or does — is still asked here, as a question; the map records their answer, and
 the plan builds the design from it.
 
 ### 0. The request
@@ -146,6 +146,19 @@ something concrete.
 default on a point that changes the work. Max 7, and only what you genuinely cannot answer from
 the evidence you gathered — don't manufacture questions to look thorough, and don't ask what the
 codebase already told you.
+
+Never a technical choice (`_shared.md`, "Ask, don't assume"). **The development stack is an exception**: when the
+work needs a stack the project does not have yet — language, framework, database, hosting, a paid service — and
+neither the project, the request, the user's answers nor a document they gave names it, ask it **last**, on its
+own, once the other answers are in. Offer three: **the best fit** for the requirements, in your view — your
+recommendation, first; **the cheapest**, free if a free one exists; **the easiest to maintain**. When two of these
+are the same stack, merge them and say so; never invent a weaker option to fill a place. For each: its cost, pros,
+cons, what it means later, how fast it reaches a first version compared with the others, how easy it is to move
+away from, and whether MetaXoTRail has extra guidance for it. If all three are the same stack, offer it with the
+closest alternative and say why the others merged. **Prices come from the web, never from memory**: what you
+remember may be out of date. Look each one up on the provider's own page, name the source, and state that it is an
+estimate the user must confirm with the provider, and that you are not responsible for it. If you cannot find a
+current price, say so — never give an old or guessed one.
 
 1. ...
 

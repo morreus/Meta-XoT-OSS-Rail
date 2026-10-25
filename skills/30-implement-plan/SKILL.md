@@ -42,13 +42,15 @@ milestone's commit — not headings. Re-read the milestone NOW: files to change,
 4. **Minimal diff** — smallest change that achieves the milestone goal.
 5. **Never perform an irreversible/production/money-touching action autonomously** — if the milestone touches anything in the context map's **Project-Risk Touchpoints** (e.g. payments, production data, the project's protected files), STOP and hand back to the user with exactly what you intend to do. Destructive git / `rm -rf` are confirmation-gated regardless.
 
+**Before installing anything outside the project** (M0 setting up a new stack), show the user the full list and wait for one approval (`20-plan-impl`, M0).
+
 ### Blocked Check (before AND during implementation)
 If you hit: unclear requirements, missing information, unexpected behavior, or an assumption proven wrong → **STOP**.
 
 When blocked:
 1. Document the blocker in `docs/context_map_<slug>.md` → Unknowns.
 2. Describe what you learned and how to unblock.
-3. **Ask the user** the specific question — do NOT assume an answer to keep moving.
+3. **Ask the user** the specific question when it is about what the work should do or a fact only they have. A technical blocker is yours to solve: investigate it, and if it shows the plan was wrong, say so in the step's record, so the review sends the work back to the plan. In a run, if nothing could be built, say so with `question input`, so the operator can send the work back to the plan.
 4. Output: `BLOCKED: [reason]`. Do not fabricate success or work around it.
 
 ### Instrumentation (only if needed to verify)
@@ -125,7 +127,7 @@ Update `docs/context_map_<slug>.md` — write into it, and never open it by over
 ## CRITICAL RULES — DO NOT VIOLATE
 1. **Never fabricate success** — if verification fails, say so.
 2. **Never skip verification** — run the actual steps, report actual results.
-3. **Stop when blocked; ask, don't assume** — never work around an unknown.
+3. **Stop when blocked; ask, don't assume** — never work around an unknown; ask the user only what is theirs (the Blocked check above).
 4. **One milestone only** — resist "one more thing".
 5. **Never perform irreversible/production/money-touching actions autonomously** — hand back to the user.
 6. **Code changed = docs updated** — no exceptions.

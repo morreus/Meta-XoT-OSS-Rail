@@ -47,6 +47,7 @@ ultrathink: Create an implementation plan for: $ARGUMENTS
 **REQUIRED**: the working document, `WORKING.md`, holding the context map.
 - If it is missing or has no map: STOP. Run `/10-context-map $ARGUMENTS` first.
 - If present: read it NOW. It records the detected **stack**, the **Project-Risk Touchpoints**, and the unknowns/assumptions — reference them throughout.
+- When the run starts here, the work needs a stack the project does not have, and neither the agreed context nor the request names it, ask it before planning, in the form `10-context-map` §9 describes.
 
 If the stack rules aren't already in context, read `${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md` and `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md` (stack from the context map).
 
@@ -101,8 +102,8 @@ Exact steps; Expected vs Actual.
 
 **Rules:**
 - Low/Medium confidence = MUST validate before or during implementation.
-- If an assumption **cannot be validated from evidence**, do NOT silently assume it — surface it as a question to the user (per the "ask, don't assume" rule in _shared.md).
-- If any assumption is Low or Medium confidence → an Instrumentation Milestone (M0) is required.
+- If an assumption **cannot be validated from evidence**, do NOT silently assume it — surface it as a question to the user (per the "ask, don't assume" rule in _shared.md) — unless it is technical: then a check in M0 or the first milestone settles it, not a question.
+- If any assumption is Low or Medium confidence, or the stack is new → M0 is required.
 
 ### 4. Options Analysis
 For each (A: primary, B: alternative, C: simplest viable):
@@ -135,7 +136,14 @@ implemented, reviewed, test-planned, that plan reviewed, tested, results reviewe
 next one starts. Per-milestone testing is what stops a shipment reaching production with its
 acceptance test still unwritten.
 
-#### M0: Instrumentation (ONLY if Low/Med confidence assumptions exist — otherwise no M0 heading at all)
+#### M0: Set-up and instrumentation (when the stack is new, or Low/Med confidence assumptions exist — otherwise no M0 heading at all)
+**When the stack is new** — chosen in the map, not yet in the project — M0 sets it up first: everything the stack
+needs, downloaded and installed; the empty project created; the services connected (database, hosting, payments).
+**Before installing anything outside the project, show the user the full list — each tool, what it is for, where it
+goes — and wait for one approval of the whole list.** What only the user can do — create an account, pay a fee,
+copy a key — is asked as an action question, with everything needed to do it in the chat. **Exit of the set-up:** an
+empty app builds and runs where it will be used (the device, or the browser). Then M0 checks the plan's uncertain
+assumptions on that running base, as below.
 **Purpose:** Validate assumptions before committing to an approach.
 **Scope:** targeted debug logging at specific locations, using **the stack's instrumentation style from `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md`** (e.g. Python `logging` gated by a `--debug` flag; Unity `Debug.Log` under `#if UNITY_EDITOR || DEVELOPMENT_BUILD`; Flutter `debugPrint` under `kDebugMode`). Low-noise, event-based.
 **Verification:** trigger the action; observe output; confirm/reject assumptions.
@@ -184,7 +192,7 @@ they belong.
 
 ## What could go wrong
 
-**Pre-mortem (recommended option):** assume it shipped and broke. List the top 3 ways it failed (correctness, integration, scale, the project's risk touchpoints) and how the plan prevents each. If you can't prevent one, that's a question or a new milestone.
+**Pre-mortem (recommended option):** assume it shipped and broke. List the top 3 ways it failed (correctness, integration, scale, the project's risk touchpoints) and how the plan prevents each. If you can't prevent one, that's a question (when it is about what the work should do) or a new milestone.
 
 **Scale & edge cases** — populate from this project's risk surface — **the stack risk checklist in `${CLAUDE_PLUGIN_ROOT}/stack_rules/<stack>.md`** plus the context map's **Project-Risk Touchpoints** — not a fixed list:
 | Risk (from stack rules / context map) | Consideration | How Addressed |
@@ -198,8 +206,8 @@ Always include: empty/null input, boundary values, concurrent access, failure/ro
 
 ## RULES
 1. **No guessing** — every claim needs evidence from codebase, git, or web.
-2. **Ask, don't assume** — anything you cannot validate becomes a question, not a silent assumption.
-3. **M0 is mandatory** if any assumption is Low/Medium confidence.
+2. **Ask, don't assume** — anything you cannot validate becomes a question when it is about what the work should do; a technical one becomes a check in M0, not a question.
+3. **M0 is mandatory** if any assumption is Low/Medium confidence, or the stack is new.
 4. **M1 must be tiny** — verifiable in < 5 minutes, minimal files.
 5. **Simplest solution wins** — justify any complexity.
 6. **Match existing patterns** — don't invent new conventions.
@@ -235,7 +243,8 @@ and that half is yours.
   fix wrote no new fact, `New facts (<ticket>): none`. Nothing else goes on that line: the close
   reads it whole, so `…: TODO` is refused. A fix of the code (step 30) owes no line.
 - **The map and the plan** — `10-context-map`, `20-plan-impl`, and either one redone under
-  `93-rollback`. Before you close, ask every question that changes the work with `question ask`
+  `93-rollback`. Before you close, ask every question that is the user's to answer (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`,
+  "Ask, don't assume") with `question ask`
   (below) and wait for the answer. Then write, in `WORKING.md`, the line
   `Open questions (<ticket>): none` on a line of its own, with nothing after `none` — not a full
   stop, not what is still pending; the close reads it whole. `none` means every question that
@@ -347,7 +356,7 @@ run should stop short of its target) — and a question that has no legal reply 
 refused rather than written. Every legal reply is printed with what it repeats; show them both.
 
 **And two kinds are about the WORK, not the state: `ask` and `observe`.** When the artifact cannot be finished
-without a decision that is the operator's — which of two designs, what a requirement means, a
+without a decision that is the operator's — which of two designs of what the user sees or does, what a requirement means, a
 figure only they have — do not write the question into the document and close the step around it.
 Ask it: `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" question ask "<what you need to know>"`
 holds the ticket the same way. Give it options when the decision is a choice — `--option "<label>"`
@@ -371,9 +380,9 @@ When they reply, run `status` and drive the run on to its target. **Before you t
 recorded, run `status` and see `answered q<n>`**, or the move applied; if it is not there, nothing was
 recorded — say so, and show them the same question again.
 
-**How to ask.** They decide from what the question tells them, so each question carries a short
-background in business words, then its options, each with its pros, its cons and what it costs —
-your recommendation first, saying it is the recommendation. A content question's options are yours:
+**How to ask.** They decide from what they read before the sheet: the briefing in the chat
+(`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask"), with each option's pros, its cons
+and what it costs — your recommendation first, saying it is the recommendation. A content question's options are yours:
 pass your recommendation as its first `--option`, so its key is `a` — `1a`, `2a`, … in a question in
 parts. A state question's options are the moves the pipeline printed, with what each repeats: mark your
 recommendation beside its key instead.
@@ -384,8 +393,8 @@ back to its code step"* — and that it repeats the steps the lock line names. S
 one sheet question per part, headed `q<n>` for a question of one part and `q<n>·<part>` for each part of
 a question in parts, each sheet question's text different from the others'. **Each option's label is the option exactly as recorded** — a content question's label, a
 state question's plain label, copied exactly as `status` prints it after *on the sheet:* (MetaXoTRail writes it, naming
-the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key, pros, cons
-and cost go in the option's description, which opens with what the option means in plain words. A state
+the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key
+and a one-line reminder of what it means go in the option's description; the full pros, cons and cost are in the briefing. A state
 question of one move gets a second option, *"Talk it over first"*: their click on it is no move, so the question
 is asked again under a new `q<n>`, and the run waits while they ask you about it. A state question of more than four moves is not put on the sheet. Tell them to click their
 choice, or type the key: the hook records their click in the default, acceptEdits and auto permission modes, and the key in every mode —

@@ -73,13 +73,15 @@ milestone's commit — not headings. Re-read the milestone NOW: files to change,
 4. **Minimal diff** — smallest change that achieves the milestone goal.
 5. **Never perform an irreversible/production/money-touching action autonomously** — if the milestone touches anything in the context map's **Project-Risk Touchpoints** (e.g. payments, production data, the project's protected files), STOP and hand back to the user with exactly what you intend to do. Destructive git / `rm -rf` are confirmation-gated regardless.
 
+**Before installing anything outside the project** (M0 setting up a new stack), show the user the full list and wait for one approval (`20-plan-impl`, M0).
+
 ### Blocked Check (before AND during implementation)
 If you hit: unclear requirements, missing information, unexpected behavior, or an assumption proven wrong → **STOP**.
 
 When blocked:
 1. Document the blocker in `WORKING.md` → Unknowns.
 2. Describe what you learned and how to unblock.
-3. **Ask the user** the specific question — do NOT assume an answer to keep moving.
+3. **Ask the user** the specific question when it is about what the work should do or a fact only they have. A technical blocker is yours to solve: investigate it, and if it shows the plan was wrong, say so in the step's record, so the review sends the work back to the plan. In a run, if nothing could be built, say so with `question input`, so the operator can send the work back to the plan.
 4. Output: `BLOCKED: [reason]`. Do not fabricate success or work around it.
 
 ### Instrumentation (only if needed to verify)
@@ -156,7 +158,7 @@ Update `WORKING.md` — write into it, and never open it by overwriting:
 ## CRITICAL RULES — DO NOT VIOLATE
 1. **Never fabricate success** — if verification fails, say so.
 2. **Never skip verification** — run the actual steps, report actual results.
-3. **Stop when blocked; ask, don't assume** — never work around an unknown.
+3. **Stop when blocked; ask, don't assume** — never work around an unknown; ask the user only what is theirs (the Blocked check above).
 4. **One milestone only** — resist "one more thing".
 5. **Never perform irreversible/production/money-touching actions autonomously** — hand back to the user.
 6. **Code changed = docs updated** — no exceptions.
@@ -187,7 +189,8 @@ and that half is yours.
   fix wrote no new fact, `New facts (<ticket>): none`. Nothing else goes on that line: the close
   reads it whole, so `…: TODO` is refused. A fix of the code (step 30) owes no line.
 - **The map and the plan** — `10-context-map`, `20-plan-impl`, and either one redone under
-  `93-rollback`. Before you close, ask every question that changes the work with `question ask`
+  `93-rollback`. Before you close, ask every question that is the user's to answer (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`,
+  "Ask, don't assume") with `question ask`
   (below) and wait for the answer. Then write, in `WORKING.md`, the line
   `Open questions (<ticket>): none` on a line of its own, with nothing after `none` — not a full
   stop, not what is still pending; the close reads it whole. `none` means every question that
@@ -299,7 +302,7 @@ run should stop short of its target) — and a question that has no legal reply 
 refused rather than written. Every legal reply is printed with what it repeats; show them both.
 
 **And two kinds are about the WORK, not the state: `ask` and `observe`.** When the artifact cannot be finished
-without a decision that is the operator's — which of two designs, what a requirement means, a
+without a decision that is the operator's — which of two designs of what the user sees or does, what a requirement means, a
 figure only they have — do not write the question into the document and close the step around it.
 Ask it: `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" question ask "<what you need to know>"`
 holds the ticket the same way. Give it options when the decision is a choice — `--option "<label>"`
@@ -323,9 +326,9 @@ When they reply, run `status` and drive the run on to its target. **Before you t
 recorded, run `status` and see `answered q<n>`**, or the move applied; if it is not there, nothing was
 recorded — say so, and show them the same question again.
 
-**How to ask.** They decide from what the question tells them, so each question carries a short
-background in business words, then its options, each with its pros, its cons and what it costs —
-your recommendation first, saying it is the recommendation. A content question's options are yours:
+**How to ask.** They decide from what they read before the sheet: the briefing in the chat
+(`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask"), with each option's pros, its cons
+and what it costs — your recommendation first, saying it is the recommendation. A content question's options are yours:
 pass your recommendation as its first `--option`, so its key is `a` — `1a`, `2a`, … in a question in
 parts. A state question's options are the moves the pipeline printed, with what each repeats: mark your
 recommendation beside its key instead.
@@ -336,8 +339,8 @@ back to its code step"* — and that it repeats the steps the lock line names. S
 one sheet question per part, headed `q<n>` for a question of one part and `q<n>·<part>` for each part of
 a question in parts, each sheet question's text different from the others'. **Each option's label is the option exactly as recorded** — a content question's label, a
 state question's plain label, copied exactly as `status` prints it after *on the sheet:* (MetaXoTRail writes it, naming
-the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key, pros, cons
-and cost go in the option's description, which opens with what the option means in plain words. A state
+the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key
+and a one-line reminder of what it means go in the option's description; the full pros, cons and cost are in the briefing. A state
 question of one move gets a second option, *"Talk it over first"*: their click on it is no move, so the question
 is asked again under a new `q<n>`, and the run waits while they ask you about it. A state question of more than four moves is not put on the sheet. Tell them to click their
 choice, or type the key: the hook records their click in the default, acceptEdits and auto permission modes, and the key in every mode —
