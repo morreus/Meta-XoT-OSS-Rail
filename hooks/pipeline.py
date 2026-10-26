@@ -698,10 +698,15 @@ def _ask(project, clock, kind, ticket, step, text=None, options=None):
     except K.BadBooks as exc:
         raise BadCommand("the books would not hold this question: %s" % exc)
     asked = {"asks": kind, "legal": list(legal), E.OPTIONS: options}
-    return "\n".join(["%s — reply with%s" % (qid, _replies(asked))] + _costs(events, asked, ticket, step))
+    return "\n".join(["%s — reply with%s" % (qid, _replies(asked))] + _costs(events, asked, ticket, step)
+                     + [_BRIEF_FIRST])
 
 
 _NO_TEXT = "the run is waiting on you"
+
+_BRIEF_FIRST = ("Before the operator answers this, on a sheet or by typing, brief them in the chat, in this message: "
+                "what they need to decide or do — each option's pros, cons and cost, or the steps and how to check "
+                "them — and your recommendation (MetaXoTRail's rule \"Brief before you ask\").")
 
 
 def _shown(events, question):

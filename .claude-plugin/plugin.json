@@ -6,5 +6,6 @@
     "name": "Stamatios"
   },
   "license": "Apache-2.0",
-  "displayName": "Meta-XoT-OSS-Rail"
+  "displayName": "Meta-XoT-OSS-Rail",
+  "repository": "https://github.com/morreus/Meta-XoT-OSS-Rail"
 }

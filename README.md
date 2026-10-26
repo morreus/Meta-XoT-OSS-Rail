@@ -428,15 +428,29 @@ Claude to search the web, as Claude Code can do in any session.
 - A run takes much longer, and uses much more of your Claude usage, than asking Claude directly: every
   step has its own review agent, and a review with findings runs again after the fix.
 - It is tested on macOS. Linux and Windows are not tested.
+- After an update, the conversation that was open keeps the old version's instructions. Quit Claude Code and
+  start a new conversation (see Updating).
 
 ### Updating
 
-```bash
-claude plugin update metaxotrail
-```
+Two ways to get a new version, and one to be told of it:
 
-What changed in each version is in [`CHANGELOG.md`](CHANGELOG.md). Start a new Claude Code session
-afterwards.
+- **Automatically:** in Claude Code, run `/plugin`, open **Marketplaces**, choose `metaxotrail`, and select
+  **Enable auto-update**. It is off by default for this marketplace.
+- **By hand:**
+
+  ```bash
+  claude plugin update metaxotrail@metaxotrail
+  ```
+
+- **To be told when one is out:** on the plugin's GitHub repository, choose **Watch → Custom → Releases**.
+
+What changed in each version is in [`CHANGELOG.md`](CHANGELOG.md).
+
+When Claude Code tells you the plugin was updated — after `claude plugin update`, after you update it in `/plugin`,
+or a notice ending "Run /reload-plugins to apply" or "… to activate" — quit Claude Code and start it again, in a new conversation,
+before you continue a run. `/reload-plugins`, `/clear` and resuming the old conversation keep the old
+instructions. In the new conversation, Claude asks you before moving the run there.
 
 ### Uninstalling
 
