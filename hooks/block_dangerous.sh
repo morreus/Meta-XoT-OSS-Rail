@@ -30,13 +30,11 @@ NORM="$(printf '%s' "$CMD" | tr -d "\047\"" \
 CMD="$NORM"
 
 ask() {
-  python3 - "MetaXoTRail safety guard: $1 — confirm before proceeding?" <<'PY'
-import json, sys
+  python3 -c 'import json, sys
 print(json.dumps({"hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "ask",
-    "permissionDecisionReason": sys.argv[1]}}))
-PY
+    "permissionDecisionReason": sys.argv[1]}}))' "MetaXoTRail safety guard: $1 — confirm before proceeding?"
   exit 0
 }
 
