@@ -705,6 +705,8 @@ def main(argv, stdin, stdout):
         return 0
     write_marker(project, payload, _now)
     permission, reason = decide(payload, project)
+    if permission == ALLOW:
+        return 0
     json.dump({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                       "permissionDecision": permission,
                                       "permissionDecisionReason": reason}}, stdout)

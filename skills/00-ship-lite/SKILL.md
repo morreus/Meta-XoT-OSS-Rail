@@ -7,6 +7,10 @@ argument-hint: <small change>
 
 # 00-ship-lite — gated pipeline, short chain
 
+**A run works only in Claude Code**, where the plugin's hooks guard it. If a pipeline command fails because
+`pipeline.py` is not there, say in one line that a run needs Claude Code, and stop: do not carry out the run's
+steps without the pipeline.
+
 **Read the `00-ship` skill now and follow it exactly** — the scoring rule, the "you MUST use the
 step skills" requirement, the commands, the three situations STEP 0 reads off the disk, the
 override instructions and the completion protocol are all identical. Only these three things

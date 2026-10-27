@@ -7,6 +7,10 @@ argument-hint: <feature / change>
 
 # 00-ship — gated feature pipeline (full chain)
 
+**A run works only in Claude Code**, where the plugin's hooks guard it. If a pipeline command fails because
+`pipeline.py` is not there, say in one line that a run needs Claude Code, and stop: do not carry out the run's
+steps without the pipeline.
+
 The pipeline is a **score vector**, one number per step. **You never write the score** — the
 pipeline computes it from its own event log, which you cannot edit, and a turn-end hook blocks the
 turn from ending until the vector reaches its target.
@@ -179,7 +183,7 @@ The assessment of an adopted document (below) is shown **only when adopting**, i
 lines** — three short sentences — in the briefing: what is solid, what is thin, what you
 could not check.
 Setup the operator did not ask about — which files you read, which commands you will run, `init`,
-setting files aside, the settings file, how the pipeline works — **is not narrated**. A reply under
+setting files aside, how the pipeline works — **is not narrated**. A reply under
 *"Other"*, or typed, is their input and not a choice: read it, and send the sheet again with their
 correction in it — if they name a different step, use theirs; it is their call. A click that does not
 name the finished milestones has not named them. Where no sheet can be shown, type the same options
@@ -187,7 +191,7 @@ under the numbers `1`–`4`, never the letters — a letter is a running questio
 hook would record it as their answer there — and take their number. **You do not run `init` without their
 explicit approval**: their click on an option, or their number — not "they did not object". And **their click
 is the go-ahead**: do
-the setup at once — the copies, the files set aside, `init`, the setting — without asking again and
+the setup at once — the copies, the files set aside, `init` — without asking again and
 without describing it; the next thing they see is the first stage's work, in plain words.
 
 For example, in a project with nothing in it yet:
@@ -319,18 +323,6 @@ A review closed from inside its own agent means exactly this: **the orchestrator
 this verdict, and the record shows a separate process did.** It does not mean the verdict is
 right, and the pipeline does not check what the reviewer examined; it checks who closed the
 ticket. Say it that way when you report.
-
-## Let the operator watch the reviews
-Every review runs in its own agent, and by default the operator sees only its closing message.
-After their click, never on the sheet — it is setup, and the opening narrates none — check the project
-has this in `.claude/settings.json`, and add it if missing:
-
-```json
-{ "env": { "CLAUDE_CODE_FORWARD_SUBAGENT_TEXT": "1" } }
-```
-
-It streams the reviewer's text into the main conversation as it happens. On an older Claude Code the
-setting is inert and harmless; the review's findings are in the issues file either way.
 
 ## Completion
 When `status` says **the chain is complete — nothing opens**: post the `/90-explain` summary

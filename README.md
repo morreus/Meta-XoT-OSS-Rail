@@ -60,7 +60,7 @@ The game is the development process, turned into rules a machine enforces:
 |---|---|
 | The rules, which no player can break | **Hooks**: Claude Code runs them on every command and file write (`Bash`, `Write`, `Edit`, `NotebookEdit`), when you answer, and at the end of every turn, and they refuse the moves the process does not allow (see [Limits](#limits)) |
 | The levels, played in order | **The steps**: understand the code, plan, build one part at a time, test it |
-| The points | **The score**: a number for each step, which rises as that step and every step after it are completed; a review step completes only when an independent reviewer passes it |
+| The points | **The score**: a number for each step, which rises as that step and every step after it are completed; a review step completes only when an independent reviewer passes it, or when you accept it: starting from your own notes or plan, or closing it when the pipeline asks you |
 | The referee | **A separate reviewer** for every step, running in its own agent, which cannot edit what it reviews |
 | The score board, which no player can touch | **The run's records**: the score is kept in a log only the pipeline writes; Claude adds one line per step, which the pipeline checks against the close command Claude ran |
 | Winning | **The target score**: every step of every part closed. Until then, Claude is not allowed to end its turn, except while it waits for your answer |
@@ -125,9 +125,9 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
   never which library, pattern or code. If the work needs a development stack your project does not have
   yet — language, framework, database, hosting, or a paid service — and you did not say which, Claude asks
   you once to choose: the best fit, the cheapest and the easiest to maintain, in business terms, with a
-  recommendation. Each question is multiple choice: options Claude prepared
-  from its own study of the project, their pros and cons, and a recommendation. You click; you rarely
-  have to write.
+  recommendation. Most questions are multiple choice: options Claude prepared
+  from its own study of the project, their pros and cons, and a recommendation. You click a choice, or
+  write what Claude asked for.
 - **Risky actions wait for you.** Some decisions are too important to leave to the agent: overriding
   the process (closing, reopening or sending back a step on your own authority), ending a run
   before it is finished, and commands that would delete folders or throw away work not yet committed.
@@ -154,7 +154,7 @@ In Claude Code's messages the plugin calls itself MetaXoTRail.
 - **You know how it should be done, but you are asked questions you cannot answer.** Claude stops to
   ask which library, which pattern, which design — technical questions that need a specialist. Here
   those decisions stay with the process and its reviews. You are asked about what the work should do,
-  in plain words, with the options laid out and one recommended; the only technical choice you make is a
+  in plain words, usually with the options laid out and one recommended; the only technical choice you make is a
   stack the work needs and your project does not have.
 - **You can set the guardrails yourself, but keeping them costs you your day.** You keep
   checking the agent, to be sure it did not skip a step or a test. And when you let it run on its own, it starts
@@ -186,6 +186,9 @@ phases and tasks, each one built with this engine. It is a separate product. To 
 - a git repository with at least one commit: a run starts from the last commit, and refuses a folder
   without one.
 
+Claude Code — tested in the terminal and in the VS Code extension. claude.ai and Cowork do not install the plugin:
+claude.ai's chat does not run its hooks, so a run there could not be guarded, and Cowork is not tested.
+
 It works with any language. Flutter, Python and Unity (C#) projects also get extra guidance.
 
 ### Install
@@ -204,7 +207,7 @@ claude plugin marketplace add morreus/Meta-XoT-OSS-Rail
 claude plugin install metaxotrail@metaxotrail
 ```
 
-Start a new Claude Code session afterwards: commands load when a session starts.
+Start a new Claude Code session afterwards, so the plugin's commands and instructions load fresh.
 
 ### Before your first run
 
@@ -232,8 +235,9 @@ something that is yours to decide.
 
 ### Your answers
 
-You answer by clicking a choice. In the rare case a click cannot be read, Claude writes the exact
-line for you to type. A reply such as "yes" or "do it" is not read as an answer.
+You answer by clicking a choice, or, when Claude asks for information rather than a choice, by writing it. In
+the rare case a click cannot be read, Claude writes the exact line for you to type. A reply such as "yes" or
+"do it" is not read as an answer.
 
 ### Examples
 
@@ -282,8 +286,9 @@ How each review works:
   works from the code and the run's records.
 - **Pass or fix.** If it finds nothing that blocks, the next step opens. If it finds problems, Claude
   fixes them and the review runs again, until it passes.
-- **Only an independent pass counts.** Only a pass from an independent reviewer completes the step:
-  Claude may check its own fix between rounds, but its own check never earns the points.
+- **Only an independent pass, or your own acceptance, counts.** Only a pass from an independent reviewer, or
+  your own acceptance of the step (starting from your notes or plan, or closing it when the pipeline asks you),
+  completes it: Claude may check its own fix between rounds, but its own check never earns the points.
 
 ### When something goes wrong
 
@@ -302,7 +307,8 @@ How each review works:
 - **A command would undo or delete finished work.** During a run it is refused to Claude. During a run,
   from your own terminal, git refuses any command that would remove a commit (moving a branch back,
   deleting it); it does not stop commands that throw away changes not yet committed, such as
-  `git checkout -- .` or `git clean`. Outside a run, such a command from Claude asks you to confirm first.
+  `git checkout -- .` or `git clean`. Outside a run, some of them from Claude — such as `git reset --hard`,
+  `git rebase`, `git clean -f` and `rm -r` — ask you to confirm first.
 
 **With you:**
 
@@ -404,7 +410,7 @@ run; it is not in your menu.
 - `.git/hooks/reference-transaction` in the project: a small git hook that runs the plugin's own
   file: while a run is live, git refuses any change that moves a branch or tag back or deletes it, from any
   terminal. It does nothing once the plugin is gone.
-- `.claude/settings.json` in the project: Claude adds one line so you can watch reviews as they run.
+- The plugin's `bin/` folder, on Claude's command path while the plugin is on: it holds only a note, and no program.
 - A git commit each time a part of the plan is delivered, `<part> delivered`, as
   `metaxotrail <metaxotrail@localhost>`. It takes **everything git does not ignore** (`git add -A`) —
   the part's code, the run's documents, and any changes of yours not yet committed. It is never pushed.
@@ -427,6 +433,8 @@ Claude to search the web, as Claude Code can do in any session.
   A second run in the same project is refused while the first is live.
 - A run takes much longer, and uses much more of your Claude usage, than asking Claude directly: every
   step has its own review agent, and a review with findings runs again after the fix.
+- It works in Claude Code only, by design: its `bin/` folder keeps claude.ai and Cowork from installing it — claude.ai's
+  chat does not run its hooks, so a run there could not be guarded, and Cowork is not tested.
 - It is tested on macOS. Linux and Windows are not tested.
 - After an update, the conversation that was open keeps the old version's instructions. Quit Claude Code and
   start a new conversation (see Updating).
@@ -470,7 +478,6 @@ To clean up as well, remove what you no longer want:
 | `.git/hooks/reference-transaction` | the git hook, in each project that ran the plugin | `rm .git/hooks/reference-transaction` in that project |
 | `.metaxotrail/` | the runs' records and history | `rm -r .metaxotrail` |
 | `WORKING.md`, `TEST_RESULTS.md` | the run's documents: the map, the plan, the test results | delete them, or keep them as your notes |
-| `.claude/settings.json` | one line, `"CLAUDE_CODE_FORWARD_SUBAGENT_TEXT": "1"`, under `env` | delete that line |
 | `docs/context_map_*.md`, `docs/test_results_*.md` | documents the steps wrote when used on their own | yours to keep or delete |
 | `~/.claude/metaxotrail-anchor/` | one small file per run, in your home folder | `rm -r ~/.claude/metaxotrail-anchor` |
 
