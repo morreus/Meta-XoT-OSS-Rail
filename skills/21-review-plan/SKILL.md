@@ -1,6 +1,6 @@
 ---
 name: 21-review-plan
-description: Adversarial fresh-eyes review of the implementation PLAN — challenges the chosen approach, validates options/assumptions against codebase+git+web, checks milestones, risks, and overengineering. Run after /20-plan-impl, before implementing.
+description: A second Claude reviews the plan. It challenges the chosen approach, checks the options and assumptions against the code and the web, and looks for missing steps, risks and needless complexity. Use it after /20-plan-impl, before building.
 disable-model-invocation: true
 argument-hint: <feature being planned>
 ---

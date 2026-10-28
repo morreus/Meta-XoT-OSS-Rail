@@ -1,6 +1,6 @@
 ---
 name: 94-clean-process
-description: End the current gated run and archive its state, so the pipeline stops interfering with unrelated work in this project. Use when a run is finished, abandoned, or stuck. Documents are kept; only the run's bookkeeping is filed away.
+description: Ends the current run and files away its records, so the process stops affecting other work in the project. Use it when a run is finished, abandoned or stuck. Your documents are kept.
 disable-model-invocation: true
 argument-hint: (none)
 ---

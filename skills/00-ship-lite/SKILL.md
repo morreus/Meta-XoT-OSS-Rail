@@ -1,6 +1,6 @@
 ---
 name: 00-ship-lite
-description: Gate-enforced pipeline for a SMALL, low-risk change — the short chain (no test steps). Same engine and same gate as /00-ship. End this run and start /00-ship if the change turns out risky.
+description: The short route for a small, low-risk change. Claude studies the project, plans and builds the change, and a second Claude reviews each step. There is no separate testing stage. If the change turns out to be risky, end the run and start /00-ship.
 disable-model-invocation: true
 argument-hint: <small change>
 ---

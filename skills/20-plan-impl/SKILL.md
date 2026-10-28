@@ -1,6 +1,6 @@
 ---
 name: 20-plan-impl
-description: Create an evidence-based implementation plan with validated assumptions, options analysis, and milestones. Requires a context map first. Invoke explicitly after /10-context-map.
+description: Plans a change. It weighs the options, checks its assumptions, sets the rules the result must meet, and splits the work into small parts called milestones. It needs the study from /10-context-map first.
 disable-model-invocation: true
 argument-hint: <feature or area to plan>
 ---

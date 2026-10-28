@@ -1,6 +1,6 @@
 ---
 name: 11-review-map
-description: Adversarial fresh-eyes review of the CONTEXT MAP (pre-plan). Independently re-checks the codebase, git, and web; challenges every claim; surfaces gaps and questions. Run before planning.
+description: A second Claude reviews the study written by /10-context-map. It re-checks the code, the git history and the web, questions every claim, and lists gaps and open questions. Use it before planning.
 disable-model-invocation: true
 argument-hint: <feature being mapped>
 ---

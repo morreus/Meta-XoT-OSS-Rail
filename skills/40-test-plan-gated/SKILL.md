@@ -1,6 +1,6 @@
 ---
 name: 40-test-plan-gated
-description: GATED 40-test-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /40-test-plan when there is no run. Create an evidence-based test plan from the context map, plan, and actual implementation — categorized scenarios, measurable acceptance criteria, risk-based prioritization. Run after /30-implement-plan, before /50-test-impl.
+description: GATED 40-test-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /40-test-plan when there is no run. Plans the tests from the study, the plan and the code that was built. It covers normal, unusual and error cases, gives each test a measurable pass rule, and puts the riskiest first. Use it after /30-implement-plan, before /50-test-impl.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

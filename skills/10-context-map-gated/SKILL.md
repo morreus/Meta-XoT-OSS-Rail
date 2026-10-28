@@ -1,6 +1,6 @@
 ---
 name: 10-context-map-gated
-description: GATED 10-context-map — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /10-context-map when there is no run. Map relevant code paths and gather evidence before proposing solutions. Read-only, stack-aware exploration. Invoke explicitly before planning a change or investigating a feature.
+description: GATED 10-context-map — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /10-context-map when there is no run. Studies the parts of the project a change touches and writes down how they work, with the evidence and what is still unclear. It changes no code. Use it first, before planning a change.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

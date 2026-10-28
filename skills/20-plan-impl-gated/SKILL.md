@@ -1,6 +1,6 @@
 ---
 name: 20-plan-impl-gated
-description: GATED 20-plan-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /20-plan-impl when there is no run. Create an evidence-based implementation plan with validated assumptions, options analysis, and milestones. Requires a context map first. Invoke explicitly after /10-context-map.
+description: GATED 20-plan-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /20-plan-impl when there is no run. Plans a change. It weighs the options, checks its assumptions, sets the rules the result must meet, and splits the work into small parts called milestones. It needs the study from /10-context-map first.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

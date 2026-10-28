@@ -1,11 +1,23 @@
 {
   "name": "metaxotrail",
   "version": "1.0.0",
-  "description": "Guides AI coding agents through a scored, enforced development process, enabling non-developers to build autonomously without technical decision-making.",
+  "description": "Guides Claude Code through a scored, enforced development process: study, plan, build and test, each step reviewed. You answer the business questions; Claude makes the technical choices.",
   "author": {
     "name": "Stamatios"
   },
   "license": "Apache-2.0",
   "displayName": "Meta-XoT-OSS-Rail",
-  "repository": "https://github.com/morreus/Meta-XoT-OSS-Rail"
+  "repository": "https://github.com/morreus/Meta-XoT-OSS-Rail",
+  "keywords": [
+    "workflow",
+    "development-process",
+    "planning",
+    "code-review",
+    "testing",
+    "guardrails",
+    "non-developers"
+  ],
+  "documentationUrl": "https://github.com/morreus/Meta-XoT-OSS-Rail#readme",
+  "privacyPolicyUrl": "https://github.com/morreus/Meta-XoT-OSS-Rail#privacy-policy",
+  "termsOfServiceUrl": "https://github.com/morreus/Meta-XoT-OSS-Rail#terms-of-use"
 }

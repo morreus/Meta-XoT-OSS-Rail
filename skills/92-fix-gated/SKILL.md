@@ -1,6 +1,6 @@
 ---
 name: 92-fix-gated
-description: GATED 92-fix — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /92-fix when there is no run. Apply the High/Med findings from a review to the artifact (map, plan, code, or tests) — minimal, targeted edits following the producing stage's conventions — then hand back for a fresh re-review. Does NOT review or self-certify.
+description: GATED 92-fix — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /92-fix when there is no run. Fixes the problems a review rated high or medium, with small, targeted changes, then hands the work back for a fresh review. It does not review or approve its own fix.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

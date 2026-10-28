@@ -1,6 +1,6 @@
 ---
 name: 10-context-map
-description: Map relevant code paths and gather evidence before proposing solutions. Read-only, stack-aware exploration. Invoke explicitly before planning a change or investigating a feature.
+description: Studies the parts of the project a change touches and writes down how they work, with the evidence and what is still unclear. It changes no code. Use it first, before planning a change.
 disable-model-invocation: true
 argument-hint: <feature or area to map>
 ---

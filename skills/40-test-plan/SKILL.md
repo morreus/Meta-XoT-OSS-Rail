@@ -1,6 +1,6 @@
 ---
 name: 40-test-plan
-description: Create an evidence-based test plan from the context map, plan, and actual implementation — categorized scenarios, measurable acceptance criteria, risk-based prioritization. Run after /30-implement-plan, before /50-test-impl.
+description: Plans the tests from the study, the plan and the code that was built. It covers normal, unusual and error cases, gives each test a measurable pass rule, and puts the riskiest first. Use it after /30-implement-plan, before /50-test-impl.
 disable-model-invocation: true
 argument-hint: <feature being tested>
 ---

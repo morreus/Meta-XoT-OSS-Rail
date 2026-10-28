@@ -1,6 +1,6 @@
 ---
 name: 50-test-impl
-description: Execute the test plan one test at a time with real evidence, honest PASS/FAIL/SUSPICIOUS verdicts, and integrity self-checks. Never fabricates results. Run after /40-test-plan.
+description: Runs the test plan one test at a time and records what really happened, with evidence, as pass, fail or suspicious. It never invents a result. Use it after /40-test-plan.
 disable-model-invocation: true
 argument-hint: <feature being tested>
 ---

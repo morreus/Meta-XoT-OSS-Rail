@@ -1,6 +1,6 @@
 ---
 name: 30-implement-plan
-description: Implement exactly one milestone from the plan, with self-verification, blocking on unknowns, and mandatory doc updates. Requires a plan first. Invoke explicitly after /20-plan-impl.
+description: Builds one milestone of the plan and checks it by running it. It stops and asks when something is unclear, and updates the plan's documents. It needs a plan from /20-plan-impl first.
 disable-model-invocation: true
 argument-hint: <milestone id, e.g. M1 (optional)>
 ---

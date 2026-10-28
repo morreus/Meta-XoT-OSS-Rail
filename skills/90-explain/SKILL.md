@@ -1,6 +1,6 @@
 ---
 name: 90-explain
-description: Summarize an issue, change, or decision in short, non-technical, business terms — the issue, the proposed fix, why it was chosen, and the impact. For stakeholders / a step-back view, NOT a code walkthrough.
+description: Explains an issue, a change or a decision in short, plain business words. It says what the problem is, the proposed fix, why it was chosen and what it changes. For an overview, not a walk through the code.
 disable-model-invocation: true
 argument-hint: <the issue / change / decision to summarize>
 ---

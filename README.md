@@ -10,8 +10,8 @@ you having to set guardrails by hand.
 
 You describe what you want, and it takes the work all the way to the end — study, plan, implement and
 test — by itself, pausing only to ask you what is yours to decide: business questions, and risky actions
-such as deleting files and folders or overriding the process. It does this through 18 skills, 6 hooks and
-more than 15 code files. Technical decisions are made by the agent, to fit your requirements and needs
+such as deleting files and folders or overriding the process. It does this through 29 skills (18 commands
+you can type, and 11 internal copies a run uses for its steps), 6 hooks and more than 15 code files. Technical decisions are made by the agent, to fit your requirements and needs
 — except a development stack the work needs and your project does not have, which Claude proposes in
 business terms for you to choose.
 
@@ -34,7 +34,8 @@ Its name, and the start of every command, is `metaxotrail`.
 - **[Reference](#reference):** [the commands](#the-commands) ·
   [what it changes on your machine](#what-it-changes-on-your-machine) · [limits](#limits) ·
   [updating](#updating) · [uninstalling](#uninstalling)
-- **[The project](#the-project):** [contributing](#contributing) · [support](#support) · [licence](#licence)
+- **[The project](#the-project):** [contributing](#contributing) · [support](#support) · [licence](#licence) ·
+  [privacy policy](#privacy-policy) · [terms of use](#terms-of-use)
 
 ## What it is
 
@@ -514,3 +515,35 @@ For questions, the full suite, or working together, contact the author on [Linke
 
 Apache License 2.0 — see [`LICENSE`](LICENSE). [`NOTICE`](NOTICE) credits the author, Stamatios
 Metaxotos.
+
+### Privacy policy
+
+Meta-XoT-OSS-Rail collects no personal data and sends nothing anywhere. It has no server, no account, no
+analytics and no tracking, and its own code makes no network connection. Everything it writes stays on your
+computer, and is listed in [What it changes on your machine](#what-it-changes-on-your-machine): the run's
+records and documents in your project, one small file per run in `~/.claude/metaxotrail-anchor/`, a git hook in
+the project, and a local commit for each delivered part, never pushed.
+
+The plugin runs inside Claude Code. What you write and what Claude reads go to Anthropic's model, as in any
+Claude Code session, under Anthropic's own terms and privacy policy. The plugin adds nothing to that, and the
+author receives nothing.
+
+If you contact the author on GitHub, Ko-fi or LinkedIn, those services handle what you send under their own
+policies.
+
+### Terms of use
+
+Meta-XoT-OSS-Rail is free software under the Apache License 2.0, and is provided "as is", without warranty of
+any kind (sections 7 and 8 of the [`LICENSE`](LICENSE)). In plain words:
+
+- **It guides an AI model; it does not control it.** The work is done by the model Claude Code runs. The model
+  can be wrong: it can write code that does not work, give advice or explanations that do not hold, change or
+  delete files, or make a commit you did not want.
+- **The guards reduce risk; they do not remove it.** They ask before many risky actions and refuse some others,
+  but they cannot catch everything.
+- **You stay responsible** for reviewing the work, keeping backups and version control, and for anything you
+  run, ship or publish with it.
+- **No liability.** To the extent the law allows, the author is not liable for any loss or damage arising from
+  its use, including lost or changed data, faulty code, or decisions made on its output.
+- **Claude Code and Anthropic's models** are governed by Anthropic's terms. Meta-XoT-OSS-Rail is an
+  independent project, not made or endorsed by Anthropic.

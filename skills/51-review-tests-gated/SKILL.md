@@ -1,6 +1,6 @@
 ---
 name: 51-review-tests-gated
-description: GATED 51-review-tests — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /51-review-tests when there is no run. Adversarial fresh-eyes review of the TEST RESULTS — hunts false positives, tests that cannot fail, fabricated evidence, and skipped P0s. A green check that is wrong is the worst outcome the process can produce. Run after /50-test-impl.
+description: GATED 51-review-tests — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /51-review-tests when there is no run. A second Claude reviews the test results. It looks for passes that prove nothing, tests that cannot fail, made-up evidence and important tests that were skipped. Use it after /50-test-impl.
 user-invocable: false
 context: fork
 background: false

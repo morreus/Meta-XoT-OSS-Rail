@@ -1,6 +1,6 @@
 ---
 name: 60-commit
-description: Create one atomic, conventional git commit — inspects the real diff, scans for secrets, assesses risk, requires reviews/tests green, and asks before committing. Run last.
+description: Saves the finished work as one git commit. It reads the real changes, scans for passwords and keys, rates the risk, needs the reviews and tests to be green, and asks you before it commits. Use it last.
 disable-model-invocation: true
 argument-hint: <scope / summary of the change>
 ---

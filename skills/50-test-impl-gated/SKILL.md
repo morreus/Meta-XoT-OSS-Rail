@@ -1,6 +1,6 @@
 ---
 name: 50-test-impl-gated
-description: GATED 50-test-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /50-test-impl when there is no run. Execute the test plan one test at a time with real evidence, honest PASS/FAIL/SUSPICIOUS verdicts, and integrity self-checks. Never fabricates results. Run after /40-test-plan.
+description: GATED 50-test-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /50-test-impl when there is no run. Runs the test plan one test at a time and records what really happened, with evidence, as pass, fail or suspicious. It never invents a result. Use it after /40-test-plan.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

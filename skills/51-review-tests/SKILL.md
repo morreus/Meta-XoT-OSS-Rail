@@ -1,6 +1,6 @@
 ---
 name: 51-review-tests
-description: Adversarial fresh-eyes review of the TEST RESULTS — hunts false positives, tests that cannot fail, fabricated evidence, and skipped P0s. A green check that is wrong is the worst outcome the process can produce. Run after /50-test-impl.
+description: A second Claude reviews the test results. It looks for passes that prove nothing, tests that cannot fail, made-up evidence and important tests that were skipped. Use it after /50-test-impl.
 disable-model-invocation: true
 argument-hint: <feature>
 ---

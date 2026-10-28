@@ -1,6 +1,6 @@
 ---
 name: 00-ship
-description: Gate-enforced feature pipeline (FULL chain). The pipeline opens each step, you close it on two records it compares, and a turn-end hook refuses to end the turn until the chain reaches its target. Use /00-ship-lite for small changes.
+description: Takes a feature or change from idea to finished, tested code. Claude studies the project, plans, builds and tests the work, and a second Claude reviews every step. The run cannot skip a step or stop early, and it asks you only business questions. For a small change, use /00-ship-lite.
 disable-model-invocation: true
 argument-hint: <feature / change>
 ---

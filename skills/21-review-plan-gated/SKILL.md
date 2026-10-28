@@ -1,6 +1,6 @@
 ---
 name: 21-review-plan-gated
-description: GATED 21-review-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /21-review-plan when there is no run. Adversarial fresh-eyes review of the implementation PLAN — challenges the chosen approach, validates options/assumptions against codebase+git+web, checks milestones, risks, and overengineering. Run after /20-plan-impl, before implementing.
+description: GATED 21-review-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /21-review-plan when there is no run. A second Claude reviews the plan. It challenges the chosen approach, checks the options and assumptions against the code and the web, and looks for missing steps, risks and needless complexity. Use it after /20-plan-impl, before building.
 user-invocable: false
 context: fork
 background: false

@@ -1,6 +1,6 @@
 ---
 name: 93-rollback
-description: Only inside a /00-ship run. Rework an EARLIER document that later work was built from — or the current milestone's code, before its delivery — after a review found the later work was faithful but its input was wrong. Partitions delivered from undelivered milestones, leaves delivered work untouchable, and hands back for a fresh review. Not a fix of the step under review, and never an undo of delivered code.
+description: Used only inside a /00-ship run. When a review finds that later work followed an earlier document faithfully but that document was wrong, it reworks that document, or the current milestone's code before delivery. Delivered work is never touched.
 disable-model-invocation: true
 argument-hint: <the step number to rework — 10, 20, 30 or 40>
 ---

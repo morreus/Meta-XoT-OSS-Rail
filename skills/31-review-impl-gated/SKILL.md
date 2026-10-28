@@ -1,6 +1,6 @@
 ---
 name: 31-review-impl-gated
-description: GATED 31-review-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /31-review-impl when there is no run. Adversarial fresh-eyes review of the IMPLEMENTATION (uncommitted working tree) against the plan, codebase conventions, git history, and the web. File-by-file; proves behaviour; severity-tagged. Run after /30-implement-plan, before /60-commit.
+description: GATED 31-review-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /31-review-impl when there is no run. A second Claude reviews the code that was just built, file by file, against the plan, the project's style and its history. It proves what the code does instead of trusting it, and rates each problem high, medium or low. Use it after /30-implement-plan, before /60-commit.
 user-invocable: false
 context: fork
 background: false

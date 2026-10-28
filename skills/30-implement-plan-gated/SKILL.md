@@ -1,6 +1,6 @@
 ---
 name: 30-implement-plan-gated
-description: GATED 30-implement-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /30-implement-plan when there is no run. Implement exactly one milestone from the plan, with self-verification, blocking on unknowns, and mandatory doc updates. Requires a plan first. Invoke explicitly after /20-plan-impl.
+description: GATED 30-implement-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /30-implement-plan when there is no run. Builds one milestone of the plan and checks it by running it. It stops and asks when something is unclear, and updates the plan's documents. It needs a plan from /20-plan-impl first.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end

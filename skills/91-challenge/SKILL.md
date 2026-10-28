@@ -1,6 +1,6 @@
 ---
 name: 91-challenge
-description: Brutally honest self-critique of your OWN just-produced work (map, plan, code, tests, or answer) before it goes to review — surfaces real assumptions, missed details, and things that won't scale. Aggressive but calibrated: only substantiated issues, never manufactured flaws.
+description: Claude takes an honest, hard look at its own latest work before it is reviewed, whether a study, a plan, code, tests or an answer. It names real assumptions, missed details and things that will not scale, and never invents problems.
 disable-model-invocation: true
 argument-hint: <what to pressure-test (optional; defaults to your last output)>
 ---

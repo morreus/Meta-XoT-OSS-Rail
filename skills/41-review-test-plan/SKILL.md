@@ -1,6 +1,6 @@
 ---
 name: 41-review-test-plan
-description: Adversarial fresh-eyes review of the TEST PLAN — coverage, that the test-type checklist was truly walked, that acceptance criteria are measurable, and that no test is written so it cannot fail. Run after /40-test-plan. The results are reviewed by /51-review-tests.
+description: A second Claude reviews the test plan. It checks that it covers enough, that every pass rule can be measured, and that no test could pass while the code is wrong. Use it after /40-test-plan.
 disable-model-invocation: true
 argument-hint: <feature>
 ---

@@ -1,6 +1,6 @@
 ---
 name: 11-review-map-gated
-description: GATED 11-review-map — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /11-review-map when there is no run. Adversarial fresh-eyes review of the CONTEXT MAP (pre-plan). Independently re-checks the codebase, git, and web; challenges every claim; surfaces gaps and questions. Run before planning.
+description: GATED 11-review-map — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /11-review-map when there is no run. A second Claude reviews the study written by /10-context-map. It re-checks the code, the git history and the web, questions every claim, and lists gaps and open questions. Use it before planning.
 user-invocable: false
 context: fork
 background: false

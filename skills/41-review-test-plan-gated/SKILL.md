@@ -1,6 +1,6 @@
 ---
 name: 41-review-test-plan-gated
-description: GATED 41-review-test-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /41-review-test-plan when there is no run. Adversarial fresh-eyes review of the TEST PLAN — coverage, that the test-type checklist was truly walked, that acceptance criteria are measurable, and that no test is written so it cannot fail. Run after /40-test-plan. The results are reviewed by /51-review-tests.
+description: GATED 41-review-test-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /41-review-test-plan when there is no run. A second Claude reviews the test plan. It checks that it covers enough, that every pass rule can be measured, and that no test could pass while the code is wrong. Use it after /40-test-plan.
 user-invocable: false
 context: fork
 background: false
