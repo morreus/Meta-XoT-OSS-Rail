@@ -1,6 +1,6 @@
 ---
 name: 00-ship
-description: Takes a feature or change from idea to finished, tested code. Claude studies the project, plans, builds and tests the work, and a second Claude reviews every step. The run cannot skip a step or stop early, and it asks you only business questions. For a small change, use /00-ship-lite.
+description: Takes a feature or change from idea to finished, tested code. Claude studies the project, plans, builds and tests the work, and a second Claude reviews every step. The run cannot skip a step or stop early, and it asks you only what is yours to decide. For a small change, use /00-ship-lite.
 disable-model-invocation: true
 argument-hint: <feature / change>
 ---

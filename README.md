@@ -518,32 +518,9 @@ Metaxotos.
 
 ### Privacy policy
 
-Meta-XoT-OSS-Rail collects no personal data and sends nothing anywhere. It has no server, no account, no
-analytics and no tracking, and its own code makes no network connection. Everything it writes stays on your
-computer, and is listed in [What it changes on your machine](#what-it-changes-on-your-machine): the run's
-records and documents in your project, one small file per run in `~/.claude/metaxotrail-anchor/`, a git hook in
-the project, and a local commit for each delivered part, never pushed.
-
-The plugin runs inside Claude Code. What you write and what Claude reads go to Anthropic's model, as in any
-Claude Code session, under Anthropic's own terms and privacy policy. The plugin adds nothing to that, and the
-author receives nothing.
-
-If you contact the author on GitHub, Ko-fi or LinkedIn, those services handle what you send under their own
-policies.
+The plugin collects nothing about you and sends nothing anywhere: see [`PRIVACY.md`](PRIVACY.md).
 
 ### Terms of use
 
-Meta-XoT-OSS-Rail is free software under the Apache License 2.0, and is provided "as is", without warranty of
-any kind (sections 7 and 8 of the [`LICENSE`](LICENSE)). In plain words:
-
-- **It guides an AI model; it does not control it.** The work is done by the model Claude Code runs. The model
-  can be wrong: it can write code that does not work, give advice or explanations that do not hold, change or
-  delete files, or make a commit you did not want.
-- **The guards reduce risk; they do not remove it.** They ask before many risky actions and refuse some others,
-  but they cannot catch everything.
-- **You stay responsible** for reviewing the work, keeping backups and version control, and for anything you
-  run, ship or publish with it.
-- **No liability.** To the extent the law allows, the author is not liable for any loss or damage arising from
-  its use, including lost or changed data, faulty code, or decisions made on its output.
-- **Claude Code and Anthropic's models** are governed by Anthropic's terms. Meta-XoT-OSS-Rail is an
-  independent project, not made or endorsed by Anthropic.
+Using it means accepting [`TERMS.md`](TERMS.md) and the licence: the AI can be wrong, the guards cannot catch
+every mistake, and it comes with no warranty or liability.
