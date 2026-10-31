@@ -1,6 +1,6 @@
 {
   "name": "metaxotrail",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Guides Claude Code through a scored, enforced development process: study, plan, build and test, each step reviewed. You answer the business questions; Claude makes the technical choices.",
   "author": {
     "name": "Stamatios"

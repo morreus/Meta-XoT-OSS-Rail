@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 — a clearer start for newcomers
+
+Only the README changed; the plugin works exactly as in 1.0.0. "What you need" now says, in plain words, what
+Claude Code, Python and Git are, and that you can ask Claude Code to set up Python and Git for you. "A first run"
+starts with talking your idea through with Claude, then typing the command. "Install" says how to start a new
+session after installing: type `/exit`, then `claude`.
+
 ## 1.0.0 — first public release
 
 The first public release of Meta-XoT-OSS-Rail: the full and the short chain, each step on its own, and the hooks

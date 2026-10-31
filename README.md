@@ -182,10 +182,22 @@ phases and tasks, each one built with this engine. It is a separate product. To 
 
 ### What you need
 
-- Claude Code 2.1.300 or later (the version it is tested on);
-- `python3` on your `PATH` (tested with Python 3.14);
-- a git repository with at least one commit: a run starts from the last commit, and refuses a folder
-  without one.
+- **Claude Code** 2.1.300 or later (the version it is tested on), with a paid Claude plan. Claude Code is
+  Anthropic's tool that writes and changes software for you, on your own computer; to get it, see
+  Anthropic's [setup page](https://code.claude.com/docs/en/setup). A run uses much more of your plan than
+  a normal chat (see [Limits](#limits)).
+- **Python 3**, version 3.9 or later (tested with 3.14 and 3.9). Python is a programming language; most
+  of the plugin's guards are small programs written in it.
+- **Git**, with your project's folder set up in it and saved once (a "commit"). Git keeps the history of
+  your project, every saved version: a run starts from the last one, and refuses a folder without one.
+
+If you do not know how to get Python or Git, or how to set up the folder, ask Claude Code to do it for
+you, in your project's folder. For example:
+
+```text
+Install Python 3 and git on this computer if they are missing, then set up git in this folder
+and make a first commit.
+```
 
 Claude Code — tested in the terminal and in the VS Code extension. claude.ai and Cowork do not install the plugin:
 claude.ai's chat does not run its hooks, so a run there could not be guarded, and Cowork is not tested.
@@ -208,7 +220,8 @@ claude plugin marketplace add morreus/Meta-XoT-OSS-Rail
 claude plugin install metaxotrail@metaxotrail
 ```
 
-Start a new Claude Code session afterwards, so the plugin's commands and instructions load fresh.
+Start a new Claude Code session afterwards, so the plugin's commands and instructions load fresh: type
+`/exit`, then `claude` again.
 
 ### Before your first run
 
@@ -222,11 +235,17 @@ Start a new Claude Code session afterwards, so the plugin's commands and instruc
 
 ### A first run
 
-Open Claude Code in your project and type the command; do not paste it:
+1. **Talk the idea through first.** Open Claude Code in your project and describe what you want, in
+   your own words, as in any chat. Let Claude ask you questions. Nothing is built yet. Stop when the
+   idea is clear to both of you.
+2. **Start the run in the same conversation.** Type the command, then the idea in one line; do not
+   paste the command:
 
-```text
-/metaxotrail:00-ship add a CSV export to the orders page
-```
+   ```text
+   /metaxotrail:00-ship add a CSV export to the orders page
+   ```
+
+   What you said before the command counts as part of your request.
 
 Claude looks at the project, writes a few lines about what will be built and what it found, and shows
 you a few choices:
