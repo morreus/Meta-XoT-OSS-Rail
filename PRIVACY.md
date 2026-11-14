@@ -13,9 +13,12 @@ own code makes no network connection. The author never receives your code, your 
 
 - the run's records in `.metaxotrail/` and its documents (`WORKING.md`, `TEST_RESULTS.md`) in your project. They
   can contain your request, your answers and notes about your code;
+- the documents a step writes when you use it on its own, in your project's `docs/` folder
+  (`docs/context_map_*.md`, `docs/test_results_*.md`);
 - one small file per run in `~/.claude/metaxotrail-anchor/`;
 - a git hook in your project, `.git/hooks/reference-transaction`;
-- a local git commit for each delivered part, never pushed by the plugin.
+- a local git commit for each delivered part, and the commit `/metaxotrail:60-commit` makes when you use it,
+  never pushed by the plugin.
 
 These files are yours and stay under your control. You can delete them at any time; the README's "Uninstalling"
 section says how.

@@ -11,7 +11,7 @@ argument-hint: <small change>
 `pipeline.py` is not there, say in one line that a run needs Claude Code, and stop: do not carry out the run's
 steps without the pipeline.
 
-**Read the `00-ship` skill now and follow it exactly** — the scoring rule, the "you MUST use the
+**Read the `00-ship` skill now, at `${CLAUDE_PLUGIN_ROOT}/skills/00-ship/SKILL.md`, and follow it exactly** — the scoring rule, the "you MUST use the
 step skills" requirement, the commands, the three situations STEP 0 reads off the disk, the
 override instructions and the completion protocol are all identical. Only these three things
 differ:

@@ -29,7 +29,8 @@ you — you are re-reviewing a FIX. Read, in this order:
 1. the findings the fix claims to discharge;
 2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each;
 3. what changed, against the right point — **a fresh review: what changed since the last fresh
-   review; a review of your own fix: what changed since the previous round.** Not only the round
+   review; a review of your own fix: what changed since the previous round** (outside a run only: in a run every
+   round is fresh). Not only the round
    before: after a clean round of your own fix, that round already holds every fix of the loop,
    and a fresh look compared with it would see none of them;
 4. **search for the old wording** of every line the change touched, across the whole artifact, and
@@ -89,7 +90,7 @@ there is **not a finding**; results that never exercised the whole feature end-t
    - **Lie smells:** steps claimed done but skipped; "it didn't crash" reported as PASS; evidence missing; only the happy path exercised. Any of these → the PASS is not trustworthy.
    - If you cannot independently confirm a PASS, **downgrade it to SUSPICIOUS** — never accept an unverified PASS.
 2. **Uncertainty handled** — are SUSPICIOUS/INCONCLUSIVE results marked as such, not buried inside PASS?
-3. **Failures** — every FAIL/SUSPICIOUS is a real issue and a **High** finding that blocks `/60-commit`. No failing test glossed over or skipped to keep moving.
+3. **Failures** — every FAIL/SUSPICIOUS is a real issue and a **High** finding that blocks `/60-commit` (in a run: the part's delivery). No failing test glossed over or skipped to keep moving.
 4. **Executed coverage** — were P0/P1 actually run (not skipped without a real reason)? **Check the
    results account for every test ID in the plan** — a summary line like "P0: N/N PASS" is not
    evidence that all N exist in the document. Any plan ID absent from the results is a High.
@@ -111,7 +112,7 @@ findings table below is the record.
 |---|---------|----------|--------------------------------|----------------------------|---------------|
 
 ### Verdict
-- [ ] ✅ Trustworthy and green, no High/Med findings — proceed to `/60-commit`
+- [ ] ✅ Trustworthy and green, no High/Med findings — proceed to `/60-commit` (outside a run; in a run, each part is committed when it is delivered)
 - [ ] ❌ Failures or gaps — fix and re-test. **This blocks commit.**
 
 A pass is clean only with no High and no Medium. Per the review loop in `_shared.md`: revise/fix via `/92-fix` and re-review until clean; **failing tests block commit**; if a High/Med can't be resolved, stop and warn the user.

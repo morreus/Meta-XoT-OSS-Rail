@@ -43,7 +43,7 @@ Each stage is gated by a loop, not a single review:
 
 **Re-reviewing after a fix — what you look at, what you may take on trust, and what you may not.**
 The first review of a loop sweeps everything. A later round is scoped, not relaxed: a fresh review
-reads what changed since the last fresh review; a review of your own fix reads what changed since
+reads what changed since the last fresh review; a review of your own fix (outside a run only) reads what changed since
 the previous round; each then searches the whole artifact for the old wording of every line the
 change touched, and checks whatever else the change could break. Within that scope the burden of
 proof is unchanged. And you need not re-derive from scratch a claim that a

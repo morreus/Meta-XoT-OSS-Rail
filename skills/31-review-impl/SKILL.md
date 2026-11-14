@@ -17,7 +17,7 @@ ultrathink: Adversarially review the implementation for: $ARGUMENTS — with you
 ## SCOPE — ONE milestone, and it is not the whole diff
 
 `/30-implement-plan` implements **exactly one milestone**. This review covers **that milestone**,
-and the plan names which one. If you were not told, ask before reviewing — do not guess, and do not
+and the plan names which one. If you were not told: inside a run, `status` names it; outside a run, ask before reviewing — do not guess, and do not
 review everything you can see.
 
 **In scope**
@@ -78,7 +78,8 @@ you — you are re-reviewing a FIX. Read, in this order:
 2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each; a fix of
    the code writes them in `docs/context_map_<slug>.md`, under its *Record of the repair* (since 1.1.0);
 3. what changed, against the right point — **a fresh review: what changed since the last fresh
-   review; a review of your own fix: what changed since the previous round.** Not only the round
+   review; a review of your own fix: what changed since the previous round** (outside a run only: in a run every
+   round is fresh). Not only the round
    before: after a clean round of your own fix, that round already holds every fix of the loop,
    and a fresh look compared with it would see none of them;
 4. **search for the old wording** of every line the change touched, across the whole artifact, and

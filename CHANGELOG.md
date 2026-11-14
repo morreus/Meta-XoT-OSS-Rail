@@ -1,14 +1,27 @@
 # Changelog
 
+## 1.1.1 — clearer words
+
+The plugin works exactly as in 1.1.0: only texts changed. The README says what the pipeline, a backlog file and
+Claude's scratch folder are; how to save your own changes before a run; that the default mode is shown as "Manual"
+in newer Claude Code; a clearer way out if a guard cannot run; and, for uninstalling, where to type the commands and
+how to remove the marketplace too. The privacy policy lists the documents a step writes when used on its own, and
+the commit `60-commit` makes. The terms name the **Security and quality** tab. In Claude's instructions: a run never
+runs `60-commit`; a review of Claude's own fix happens only outside a run; a finished run is filed by Claude; a code
+review inside a run reads its part of the plan from the run; and when there is no run, Claude asks you to type a
+command rather than start a run's step. Two places now give Claude the file of a skill it cannot load by name: when
+a review orders a rollback, Claude reads the rollback method itself, so its rules for redoing the plan are followed;
+and `00-ship-lite` says where `00-ship` is. The plugin's details now name its homepage.
+
 ## 1.1.0 — questions explained first, approvals by click, every review independent
 
 Questions: before each of the run's questions, Claude explains it in a message of its own, and the list of choices
 opens only after that; a turn that ends on a typed question is sent back once to ask it on a list. On a list in
 several parts, the parts you clicked stay answered. You can pause the run at any step, a review included.
 Commands: a command the guards refuse can now be approved by a click on a list, *Run it*, as well as by typing it;
-an approved git command is let through git's own hook too. The guards no longer refuse harmless commands such as
-`which rm` or `set -euo pipefail`, allow `rm -r` inside Claude's own scratch folder, check commands run through
-Monitor, and refuse everything if they cannot run at all; the README says how to get out. Claude may end its turn
+git's own guard then accepts it too. The guards no longer refuse harmless commands that only mention a risky
+word, allow `rm -r` inside Claude's own scratch folder, also check the commands Claude runs in the background,
+and refuse everything if they cannot run at all; the README says how to get out. Claude may end its turn
 while a background task runs. Records: the run's check of its records is written safely, and a check left behind by
 a full disk is told apart from tampering and repaired on your approval. Disk: review copies leave out `.git`,
 builds and dependencies; the scratch folder is emptied each time a part is delivered; Claude asks you when free

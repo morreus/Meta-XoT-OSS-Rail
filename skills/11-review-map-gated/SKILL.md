@@ -1,6 +1,6 @@
 ---
 name: 11-review-map-gated
-description: GATED 11-review-map — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /11-review-map when there is no run. A second Claude reviews the study written by /10-context-map. It re-checks the code, the git history and the web, questions every claim, and lists gaps and open questions. Use it before planning.
+description: GATED 11-review-map — the /00-ship* variant, for use ONLY while a run is active. When there is no run, ask the user to type the plain /11-review-map. A second Claude reviews the study written by /10-context-map. It re-checks the code, the git history and the web, questions every claim, and lists gaps and open questions. Use it before planning.
 user-invocable: false
 context: fork
 background: false
@@ -116,7 +116,8 @@ you — you are re-reviewing a FIX. Read, in this order:
 1. the findings the fix claims to discharge;
 2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each;
 3. what changed, against the right point — **a fresh review: what changed since the last fresh
-   review; a review of your own fix: what changed since the previous round.** Not only the round
+   review; a review of your own fix: what changed since the previous round** (outside a run only: in a run every
+   round is fresh). Not only the round
    before: after a clean round of your own fix, that round already holds every fix of the loop,
    and a fresh look compared with it would see none of them;
 4. **search for the old wording** of every line the change touched, across the whole artifact, and

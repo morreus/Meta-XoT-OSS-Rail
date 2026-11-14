@@ -287,6 +287,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" init full <start step> [<miles
    close on it from here is refused by name. Since 1.1.0 every review round is cut to
    `independent`, the rounds after a fix included; a review ticket cut to `orchestrator` exists only
    in a run begun under an older release, and is yours to carry out and close, as then.
+   **A `93-rollback:<step>` ticket has no `-gated` skill of its own**, and `93-rollback` cannot be
+   invoked: read `${CLAUDE_PLUGIN_ROOT}/skills/93-rollback/SKILL.md` and carry it out, with the step
+   after the colon as the one it reworks. Invoke that step's `-gated` skill too, for its method and
+   the close, and close the ticket as a repair.
 3. What opens next is the pipeline's decision, not yours: a clean independent review opens the
    next step; a review with findings opens `92-fix` on the step reviewed, and after your fix a
    fresh round of the same review, the fork's; a review that ordered a rollback opens `93-rollback`

@@ -11,7 +11,8 @@ you having to set guardrails by hand.
 You describe what you want, and it takes the work all the way to the end — study, plan, implement and
 test — by itself, pausing only to ask you what is yours to decide: business questions, and risky actions
 such as deleting files and folders or overriding the process. It does this through 29 skills (18 commands
-you can type, and 11 internal copies a run uses for its steps), 6 hooks and more than 15 code files. Technical decisions are made by the agent, to fit your requirements and needs
+you can type, and 11 internal copies a run uses for its steps), 6 hooks (small programs Claude Code runs at fixed moments) and more than 15 code files, all
+explained below. Technical decisions are made by the agent, to fit your requirements and needs
 — except a development stack the work needs and your project does not have, which Claude proposes in
 business terms for you to choose.
 
@@ -61,7 +62,7 @@ The game is the development process, turned into rules a machine enforces:
 |---|---|
 | The rules, which no player can break | **Hooks**: Claude Code runs them on every command and file write (`Bash`, `Monitor`, `Write`, `Edit`, `NotebookEdit`), before every multiple-choice question, when you answer, and at the end of every turn, and they refuse the moves the process does not allow (see [Limits](#limits)) |
 | The levels, played in order | **The steps**: understand the code, plan, build one part at a time, test it |
-| The points | **The score**: a number for each step, which rises as that step and every step after it are completed; a review step completes only when an independent reviewer passes it, or when you accept it: starting from your own notes or plan, or closing it when the pipeline asks you |
+| The points | **The score**: a number for each step, which rises as that step and every step after it are completed; a review step completes only when an independent reviewer passes it, or when you accept it: starting from your own notes or plan, or closing it when the pipeline — the plugin's own program that opens and closes the steps and keeps the score — asks you |
 | The referee | **A separate reviewer** for every step, running in its own agent, which cannot edit what it reviews |
 | The score board, which no player can touch | **The run's records**: the score is kept in a log only the pipeline writes; Claude adds one line per step, which the pipeline checks against the close command Claude ran |
 | Winning | **The target score**: every step of every part closed. Until then, Claude is not allowed to end its turn, except while it waits for your answer |
@@ -199,7 +200,7 @@ Install Python 3 and git on this computer if they are missing, then set up git i
 and make a first commit.
 ```
 
-Claude Code — tested in the terminal and in the VS Code extension. claude.ai and Cowork do not install the plugin:
+It is tested with Claude Code in the terminal and in the VS Code extension. claude.ai and Cowork do not install the plugin:
 claude.ai's chat does not run its hooks, so a run there could not be guarded, and Cowork is not tested.
 
 It works with any language. Flutter, Python and Unity (C#) projects also get extra guidance.
@@ -225,11 +226,12 @@ Start a new Claude Code session afterwards, so the plugin's commands and instruc
 
 ### Before your first run
 
-1. **Commit or stash your own changes.** Each time a part of the plan is delivered, the run commits
+1. **Save your own changes in git first.** Each time a part of the plan is delivered, the run commits
    everything in the project that git does not ignore, so work of yours that is not committed would
-   go into that commit.
+   go into that commit. Commit your changes, or stash them (git puts them aside for later). If you are
+   not sure how, ask Claude Code: "commit my current changes".
 2. **Switch Claude Code to auto mode.** Press Shift+Tab until the mode shows "auto", or start it with
-   `claude --permission-mode auto`. In the default mode Claude stops to ask your permission for almost
+   `claude --permission-mode auto`. In the default mode (shown as "Manual" in newer Claude Code) Claude stops to ask your permission for almost
    every command, so the run halts all the time; in `bypassPermissions` or `dontAsk` mode your clicks
    on its questions are not read.
 
@@ -330,7 +332,7 @@ How each review works:
   deleting it); it does not stop commands that throw away changes not yet committed, such as
   `git checkout -- .` or `git clean`. Outside a run, some of them from Claude — such as `git reset --hard`,
   `git rebase`, `git clean -f` and `rm -r` — ask you to confirm first. `rm -r` of things inside Claude's own scratch
-  folder for the session does not ask.
+  folder for the session (a temporary folder Claude Code gives each session for its working files) does not ask.
 - **The disk fills up while the run's records are written.** The run's check of its records can fall behind
   its log. Claude tells you so, and a repair command fixes it once you approve it. At the end of a run, such
   damage stops the run from being filed away until it is repaired or you choose to end the run.
@@ -347,8 +349,8 @@ How each review works:
 - **Claude needs a command the guards refuse,** such as `git reset --hard` or `rm -r`. It explains, in a message of
   its own, what the command does, why it is needed and whether it recommends it. Then a list asks *Run this
   command?* with the exact command, and **Run it** or **Do not run it**. Your click on **Run it** approves that
-  exact command once, within two minutes, in the run's own window. It works in the auto, default and acceptEdits
-  modes; in any other mode, you type the command into the chat on its own, which also works everywhere. Only your
+  exact command once, within two minutes, in the run's own window. It works in the auto, default (Manual) and
+  acceptEdits modes; in any other mode, you type the command into the chat on its own, which also works everywhere. Only your
   click counts: a helper agent or another window cannot approve.
 - **You want the run to pause.** Say so, at any step, a review included. Claude asks you a question that holds the
   run, and nothing moves until you answer it.
@@ -371,7 +373,8 @@ By then:
   yourself.
 - **The run's history is kept.** Ask Claude for the run's report to see every step, your answers,
   and which steps rest on your word rather than a check.
-- **Your backlog is updated, and the run is filed away by Claude.** If the request named a backlog file,
+- **Your backlog is updated, and the run is filed away by Claude.** If your request named a backlog file
+  (a file where you keep the list of things you want built, such as `BACKLOG.md`),
   Claude marks each item the run delivered, adds the findings the run left for later, and shows you the
   change, uncommitted. Then it files the run away, and the project is quiet again.
   `/metaxotrail:94-clean-process` stays your own command, for a run you end by hand.
@@ -438,10 +441,14 @@ run; it is not in your menu.
   finished work;
 - before every `Bash` and `Monitor` call, a second guard that asks you to confirm commands such as
   `git reset --hard`, `git push --force` and `rm -r`;
-- if one of these two guards cannot run at all (a missing Python, a broken file), every command, file write and
-  question is refused rather than let through unguarded. To get out: in a terminal, outside Claude
-  Code, run `claude plugin disable metaxotrail`, start Claude Code again, reinstall the plugin, and run
-  `claude plugin enable metaxotrail`. The end-of-turn check is not set this way, so it cannot trap a turn;
+- if one of these two guards cannot run at all (a missing Python, a broken file), what it guards is refused
+  rather than let through unguarded: for the first, every command, file write and question; for the second,
+  every command. To get out: in a terminal, outside Claude Code, run `claude plugin disable metaxotrail`, and
+  start Claude Code again, which now works without the plugin. Fix the cause: install Python 3 if it is
+  missing (Claude Code can do it for you), or install the plugin afresh with
+  `claude plugin uninstall metaxotrail` and `claude plugin install metaxotrail@metaxotrail`. Then run
+  `claude plugin enable metaxotrail` and start a new session. The end-of-turn check is not set this way: if it
+  cannot start at all, the turn ends as normal; if it starts and then fails, it refuses the turn and says why;
 - when you send a message, and when you click a choice, a hook that records your answer;
 - when Claude tries to end its turn, a check that refuses while the target is not reached;
 - when a session starts, a short note on where the run stands.
@@ -505,23 +512,26 @@ Two ways to get a new version, and one to be told of it:
 
 What changed in each version is in [`CHANGELOG.md`](CHANGELOG.md).
 
-When Claude Code tells you the plugin was updated — after `claude plugin update`, after you update it in `/plugin`,
-or a notice ending "Run /reload-plugins to apply" or "… to activate" — quit Claude Code and start it again, in a new conversation,
-before you continue a run. `/reload-plugins`, `/clear` and resuming the old conversation keep the old
+When Claude Code tells you the plugin was updated, quit Claude Code and start it again, in a new conversation,
+before you continue a run. This applies after `claude plugin update`, after you update it in `/plugin`, and when
+you see a notice ending "Run /reload-plugins to apply" or "… to activate". `/reload-plugins`, `/clear` and resuming the old conversation keep the old
 instructions. In the new conversation, Claude asks you before moving the run there.
 
 ### Uninstalling
 
-End any live run first: ask Claude to end it.
+End any live run first: ask Claude to end it. Then, in a terminal (or ask Claude Code to do it for you):
 
 ```bash
 claude plugin uninstall metaxotrail
 ```
 
+The marketplace you added stays; to remove it too, run `claude plugin marketplace remove metaxotrail`.
+
 That is all. What the plugin wrote in your projects stays, and does no harm: the git hook it left does
 nothing once the plugin is gone.
 
-To clean up as well, remove what you no longer want:
+To clean up as well, remove what you no longer want. The commands are typed in a terminal, in the
+project's folder (or ask Claude Code to remove them):
 
 | What | What it is | To remove |
 |---|---|---|
@@ -548,8 +558,7 @@ This is the first public version. It has been tested a lot, but it can get bette
 of the people who use it, so your feedback is what it needs most. Open an
 [issue](https://github.com/morreus/Meta-XoT-OSS-Rail/issues) for a problem, an idea, or an improvement you
 would like to discuss: say what you typed, what happened, what you expected, and your Claude Code
-version. A pull request is welcome as a suggestion too, but it cannot be merged here — please open an
-issue for it instead.
+version. Pull requests cannot be merged here: to suggest a change, open an issue and describe it there.
 
 To report a security problem, use **Report a vulnerability** on the repository's **Security and
 quality** tab, not a public issue.

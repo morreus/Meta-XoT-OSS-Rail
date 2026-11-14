@@ -32,4 +32,4 @@ terms; GitHub by GitHub's. Meta-XoT-OSS-Rail is an independent project, not made
 
 **Contact.** An issue on [GitHub](https://github.com/morreus/Meta-XoT-OSS-Rail/issues), or
 [LinkedIn](https://www.linkedin.com/in/smetaxotos). For a security problem, use **Report a vulnerability** on the
-repository's Security tab.
+repository's **Security and quality** tab.

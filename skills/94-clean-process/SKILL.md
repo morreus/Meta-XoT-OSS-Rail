@@ -1,6 +1,6 @@
 ---
 name: 94-clean-process
-description: Ends the current run and files away its records, so the process stops affecting other work in the project. Use it when a run is finished, abandoned or stuck. Your documents are kept.
+description: Ends the current run and files away its records, so the process stops affecting other work in the project. Use it to end a run by hand, when it is abandoned or stuck; a run that reaches its target is filed by Claude. Your documents are kept.
 disable-model-invocation: true
 argument-hint: (none)
 ---
@@ -60,7 +60,7 @@ skipped and why. Show them the change, and leave it uncommitted.
 
 ## When to use it
 
-- The run finished and you want the project quiet again.
+- The run finished but was not filed (a run that reaches its target is filed by Claude).
 - The run is stuck — the gate keeps blocking and the operator has decided to abandon it.
 - You want to start a different piece of work. `init` refuses to start a second run while one is
   live, and this is the sanctioned way to clear it. Do **not** work around the refusal by any

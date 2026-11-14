@@ -1,6 +1,6 @@
 ---
 name: 40-test-plan-gated
-description: GATED 40-test-plan — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /40-test-plan when there is no run. Plans the tests from the study, the plan and the code that was built. It covers normal, unusual and error cases, gives each test a measurable pass rule, and puts the riskiest first. Use it after /30-implement-plan, before /50-test-impl.
+description: GATED 40-test-plan — the /00-ship* variant, for use ONLY while a run is active. When there is no run, ask the user to type the plain /40-test-plan. Plans the tests from the study, the plan and the code that was built. It covers normal, unusual and error cases, gives each test a measurable pass rule, and puts the riskiest first. Use it after /30-implement-plan, before /50-test-impl.
 user-invocable: false
 ---
 > **YOU ARE INSIDE A GATED RUN.** This is the `/00-ship*` variant of the skill below. A turn-end
@@ -19,7 +19,7 @@ user-invocable: false
 > ticket itself when the previous step closed, and the open is already on the record.
 >
 > If `status` refuses because the event log is not there — there is **no active run** in this
-> project — you were invoked by mistake: stop, say so, and use the plain `/<step-id>` skill
+> project — you were invoked by mistake: stop, say so, and ask the user to type the plain `/<step-id>`
 > instead; any other refusal, show it to the operator and stop. Everything below assumes a run and will not make sense without one.
 >
 > **The findings raised so far in this run are in the issues file**, `.metaxotrail/issues.jsonl` in the
@@ -329,7 +329,10 @@ What the pipeline does with a verdict is set out below, not yours to choose:
   fork's, which reads what your fix changed.
 - **a rollback ordered** — the reviewer's close carried `ROLLBACK <step>`; `93-rollback` opens on
   that earlier step and everything built on it loses its credit. A target the reviewer cannot
-  reach is not silently narrowed: the run **holds** and asks the operator.
+  reach is not silently narrowed: the run **holds** and asks the operator. That ticket has no
+  `-gated` skill and `93-rollback` cannot be invoked: read
+  `${CLAUDE_PLUGIN_ROOT}/skills/93-rollback/SKILL.md` and carry it out, with the step after the colon
+  as the one it reworks, and close it as a repair, as above.
 
 ## When the operator has to decide
 

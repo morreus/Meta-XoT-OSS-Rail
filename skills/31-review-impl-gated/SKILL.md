@@ -1,6 +1,6 @@
 ---
 name: 31-review-impl-gated
-description: GATED 31-review-impl — the /00-ship* variant, for use ONLY while a run is active. Invoke the plain /31-review-impl when there is no run. A second Claude reviews the code that was just built, file by file, against the plan, the project's style and its history. It proves what the code does instead of trusting it, and rates each problem high, medium or low. Use it after /30-implement-plan, before /60-commit.
+description: GATED 31-review-impl — the /00-ship* variant, for use ONLY while a run is active. When there is no run, ask the user to type the plain /31-review-impl. A second Claude reviews the code that was just built, file by file, against the plan, the project's style and its history. It proves what the code does instead of trusting it, and rates each problem high, medium or low. Use it after /30-implement-plan, before /60-commit.
 user-invocable: false
 context: fork
 background: false
@@ -73,7 +73,7 @@ ultrathink: Adversarially review the implementation for: $ARGUMENTS — with you
 ## SCOPE — ONE milestone, and it is not the whole diff
 
 `/30-implement-plan` implements **exactly one milestone**. This review covers **that milestone**,
-and the plan names which one. If you were not told, ask before reviewing — do not guess, and do not
+and the plan names which one. If you were not told: inside a run, `status` names it; outside a run, ask before reviewing — do not guess, and do not
 review everything you can see.
 
 **In scope**
@@ -134,7 +134,8 @@ you — you are re-reviewing a FIX. Read, in this order:
 2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each; a fix of
    the code writes them in `WORKING.md`, under its *Record of the repair* (since 1.1.0);
 3. what changed, against the right point — **a fresh review: what changed since the last fresh
-   review; a review of your own fix: what changed since the previous round.** Not only the round
+   review; a review of your own fix: what changed since the previous round** (outside a run only: in a run every
+   round is fresh). Not only the round
    before: after a clean round of your own fix, that round already holds every fix of the loop,
    and a fresh look compared with it would see none of them;
 4. **search for the old wording** of every line the change touched, across the whole artifact, and
