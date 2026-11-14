@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.0 — questions explained first, approvals by click, every review independent
+
+Questions: before each of the run's questions, Claude explains it in a message of its own, and the list of choices
+opens only after that; a turn that ends on a typed question is sent back once to ask it on a list. On a list in
+several parts, the parts you clicked stay answered. You can pause the run at any step, a review included.
+Commands: a command the guards refuse can now be approved by a click on a list, *Run it*, as well as by typing it;
+an approved git command is let through git's own hook too. The guards no longer refuse harmless commands such as
+`which rm` or `set -euo pipefail`, allow `rm -r` inside Claude's own scratch folder, check commands run through
+Monitor, and refuse everything if they cannot run at all; the README says how to get out. Claude may end its turn
+while a background task runs. Records: the run's check of its records is written safely, and a check left behind by
+a full disk is told apart from tampering and repaired on your approval. Disk: review copies leave out `.git`,
+builds and dependencies; the scratch folder is emptied each time a part is delivered; Claude asks you when free
+space falls under 5 GB. The test steps add a stop step for every service a test starts. A rule for Flutter device
+builds, and a four-line form for tasks you do by hand.
+
+Reviews: every review round is now done by an independent reviewer, the rounds after a fix too; Claude no longer
+checks its own fix between rounds. The test plan is one table for each part of the plan, and its review stops the
+run only for a test that cannot be run as written, a rule or a changed behaviour with no test, an important test
+that would pass on broken code, or an important test that needs live data or real users' data. The end of a run: if your request named a backlog file, Claude marks what the run
+delivered, adds what it left for later, and shows you the change, uncommitted; then it files the run away itself.
+
 ## 1.0.1 — a clearer start for newcomers
 
 Only the README changed; the plugin works exactly as in 1.0.0. "What you need" now says, in plain words, what

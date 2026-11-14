@@ -72,6 +72,11 @@ The operator's own words, unedited — not your paraphrase, not your interpretat
 If they were vague, the vagueness is part of the record; raise it in §9 rather than resolving it
 silently here.
 
+**Then the backlog, on a line of its own under the request:** `Backlog: <file> — <ID>, <ID>, …` — the backlog
+file the request's items come from, and the ID of each item this work delivers, each followed by its row as it
+stands in that file now. Write `Backlog: none` when the request names no backlog. When the request names items
+but no file, ask the operator which file holds them (§9). The line is what the end of the work updates.
+
 This exists because every later check compares one document against the one before it: the plan
 against the map, the code against the plan. Nothing compares the finished work against what was
 actually asked for. A plan that quietly drifts, faithfully implemented, passes every review and

@@ -73,7 +73,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" close <status> [<h> <m> <l> [<
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" question <kind> "<text>"   # hold the run and ask the operator
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" report      # the run's history — every close, and which were attested or overridden
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" bind        # move the gate to THIS window
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" archive [--abandon]   # end the run (/94-clean-process)
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" archive [--abandon]   # file the run away — see *Before the run is filed*
 ```
 There is no `begin`: the open is the pipeline's, recorded when the previous step closed. **Every
 command applies the operator's pending answer first** — so after they reply to a question, running
@@ -87,7 +87,7 @@ then put a question. There are three situations and no others:
 
 | what is on disk | the routes, and there are no others | may it offer a starting step? |
 |---|---|---|
-| `.metaxotrail/` holds a **live run** | **take the run over in this window** (`bind`, then `status`) — or **end it** (`question end`, then `archive --abandon` on their `OVERRIDE END`) | **NO** |
+| `.metaxotrail/` holds a **live run** | **take the run over in this window** (`bind`, then `status`) — or **end it** (`question end`, then `archive --abandon` on their `OVERRIDE END`, then *Before the run is filed*) | **NO** |
 | records whose run has **ended**, or none, with prior work on disk | continue: a new run adopting what is done — or a new run from the beginning, `init full`, no start step | yes |
 | nothing | a new run from the beginning — `init full`, no start step | yes |
 
@@ -97,7 +97,8 @@ naming a window that no longer exists; this new tab is then **not gated at all**
 moves, which is the state hardest to notice and worst to be in. The route is `bind` followed by
 `status` and nothing else — no `init`, no chain, no starting step, no attestation, because none of
 it is being created. `init` refuses over a live run. The other route is to end it: ask `question end "<why>"`,
-and on their `OVERRIDE END`, `archive --abandon` records the ending and the score it reached. **No starting-step menu is shown on this
+and on their `OVERRIDE END`, `archive --abandon` records the ending and the score it reached; right after it, update the
+backlog as *Before the run is filed* says. **No starting-step menu is shown on this
 row** — choosing a step on a live run would take credit off that step and every one after it, which
 is a rollback wearing a resume's clothes, and a rollback is a review's to order.
 
@@ -118,7 +119,7 @@ where the step skills write when they are used without a run. Look, then propose
 ### What the operator sees — a short briefing and the sheet
 
 Everything above is yours to work out; the operator is shown the conclusions. Send **one message**:
-**a short briefing** in the chat (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask") and
+**a short briefing** in the chat (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask": Before any question, first say you are going to ask. Give the context and the content, so the user understands. This is the last thing you write, after all tool calls. Then ask the question on a sheet. End the briefing with a short block — your recommendation, and anything to act on — and put each option's cost in its description on the sheet as well: the sheet opens over the end of a long message.) and
 **the sheet** (`AskUserQuestion`), which **one click** answers. The briefing says what you understood, what
 earlier work there is, in plain words, and what each start choice means — a few lines; never what you are
 checking, never *I'll look at what's on disk first*. The business line stays in the sheet question's own text,
@@ -167,7 +168,7 @@ starting from nothing, checks them* (an independent review).
     ask `question end "<why>"`; then write in the chat the one line they paste to confirm, on a line
     of its own: `OVERRIDE END` — and, for a change of mind, the line that keeps the run going instead,
     the `OVERRIDE OPEN` reply `question end` printed. Their pasted line is their answer, recorded in every
-    mode; on `OVERRIDE END`, `archive --abandon`. No second sheet.
+    mode; on `OVERRIDE END`, `archive --abandon`, and right after it *Before the run is filed*. No second sheet.
   - **Tell Claude more first** — wherever new work is about to start (the second and third rows),
     one more option: they add details about what they want before anything starts. On their click, ask
     them for those details in a sentence; their words join the request — in a new run `10-context-map`
@@ -283,13 +284,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" init full <start step> [<miles
 2. Work **only** the open ticket: **invoke the `<id>-gated` skill** and carry it out. Each gated
    skill ends with how its ticket is closed — the line to append and the `close` to type. A
    review ticket cut to `independent` is the reviewer's to close, from inside its own agent; a
-   close on it from here is refused by name. A review ticket cut to `orchestrator` — the round
-   after your own fix — is yours to carry out and close, and a clean one opens a fresh
-   independent round.
+   close on it from here is refused by name. Since 1.1.0 every review round is cut to
+   `independent`, the rounds after a fix included; a review ticket cut to `orchestrator` exists only
+   in a run begun under an older release, and is yours to carry out and close, as then.
 3. What opens next is the pipeline's decision, not yours: a clean independent review opens the
-   next step; a review with findings opens `92-fix` on the step reviewed, and after your fix the
-   same review again as your own round; a review that ordered a rollback opens `93-rollback` on
-   the earlier step.
+   next step; a review with findings opens `92-fix` on the step reviewed, and after your fix a
+   fresh round of the same review, the fork's; a review that ordered a rollback opens `93-rollback`
+   on the earlier step.
 4. When the pipeline **holds the run and asks**, show the operator the question and the legal
    replies `status` prints — on the sheet, as the closing section of the `-gated` skill says: their click is their answer, and the
    key printed beside their choice, or a form below, is the typed fallback. **They answer with an
@@ -300,7 +301,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" init full <start step> [<miles
    - `OVERRIDE CLOSE <ticket>` — they close the ticket they name on their own authority.
    - `OVERRIDE OPEN <ticket>` — they void the ticket the pipeline cut and open the one they name.
    - `OVERRIDE END` — they end the run short of its target, answering `question end "<why>"`;
-     `archive --abandon` is refused until they have. That question's other reply, `OVERRIDE OPEN <its ticket>`,
+     `archive --abandon` is refused until they have; right after it, *Before the run is filed*. That question's other
+     reply, `OVERRIDE OPEN <its ticket>`,
      keeps the run going: nothing ends, and the run's next step is not held.
    - `ANSWER <your answer>` — their answer to a content question (`question ask`, a decision
      about the work that is theirs). It authorises nothing; the agent that asked reads it off
@@ -332,10 +334,30 @@ When `status` says **the chain is complete — nothing opens**: post the `/90-ex
 the map review, or outside the milestone under review, from the code review —
 with the ticket that raised each and its proposed fix, under a heading *Out of scope — not done in
 this run*, so they reach the operator as a backlog rather than stay in a file nobody reads —
-the next `init` sets the issues file aside. Then output
-exactly:
-`SHIP-COMPLETE — score <final vector>; summary posted; commits not pushed`
-`archive` ends the run, and `/94-clean-process` is the skill for it.
+the next `init` sets the issues file aside. Then carry out *Before the run is filed*, below, and run
+`archive`: the gate holds every turn at the target until the run is filed. Then output exactly:
+`SHIP-COMPLETE — score <final vector>; summary posted; backlog updated; run filed; commits not pushed`
+`/94-clean-process` is the operator's own command, for a run they end by hand.
+
+## Before the run is filed
+Read on both ways a run ends: at the target, **before** `archive`; on a run ended early, **right after**
+`archive --abandon` — a run may be ended while a review is open, and the guard refuses a write to the backlog
+file until no run is live. `WORKING.md`, the issues file and the old log stay until the next `init`.
+
+1. **Find the backlog.** It is the file the working document's `Backlog:` line names, under the request — or, if
+   there is no such line, the file the request itself names. If neither names one, there is nothing to update:
+   say so in one line; at the target, go on to `archive`.
+2. **Mark each item this run delivered** *built in <version>, run <hash>, commit <sha>* — the version the work
+   ships as, if the project has one; the run's hash from the first line of `WORKING.md`; the commit that delivered
+   it. For an item partly done, say what is left. A run ended early marks its items *not done* or *partly done*.
+3. **Add a row for each `OUT OF SCOPE:` finding** of the issues file, naming its run and ticket:
+   `<version>, run <hash>, <ticket>` — **unless a row already names that same run and ticket, or that same
+   finding, or the run's records say it was fixed.** Ticket ids restart in every run, so a ticket alone is not a
+   match. Tell the operator which findings were skipped, and why.
+4. **Show them the change, and leave it uncommitted.** They commit it, or change it.
+
+This is an instruction: no program checks the backlog. The gate and the pipeline's words name this section by its
+path, so it can be found after a long session.
 
 ## Rules
 - Never fabricate a close — the pipeline compares your line against your command and refuses
@@ -346,6 +368,6 @@ exactly:
 
 ## Suggested `/goal` — paste this one line, nothing else
 ```
-/goal Deliver «FEATURE» following the 00-ship skill — read it FIRST. Step 1: do STEP 0 of that skill — brief me in the chat, then show me its sheet, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init full`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. DONE only when `pipeline.py status` says the chain is complete and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 40 turns if blocked.
+/goal Deliver «FEATURE» following the 00-ship skill — read it FIRST. Step 1: do STEP 0 of that skill — brief me in the chat, then show me its sheet, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init full`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. When `pipeline.py status` says the chain is complete, update the backlog as the 00-ship skill's section *Before the run is filed* says, then run `archive`. DONE only after `archive` has filed the run and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 40 turns if blocked.
 ```
 Replace «FEATURE».

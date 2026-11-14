@@ -33,6 +33,17 @@ def head(rows):
     return prev
 
 
+def behind(rows, anchored):
+    if anchored is None or verify(rows) is not None:
+        return 0
+    prev = FIRST
+    for place, row in enumerate(rows):
+        prev = link(prev, row)
+        if prev == anchored:
+            return len(rows) - place - 1
+    return 0
+
+
 def against_anchor(rows, anchored):
     if anchored is None:
         return None

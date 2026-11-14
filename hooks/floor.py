@@ -95,13 +95,33 @@ ANSWER_FORM = "ANSWER <your answer>"
 END = "end"
 END_FORM = "OVERRIDE END"
 OBSERVE = "observe"
-KINDS = (UNREACHABLE, WRONG_INPUT, UNKNOWN, MISOPENED, ASK, END, OBSERVE)
+HOLD = "hold"
+KINDS = (UNREACHABLE, WRONG_INPUT, UNKNOWN, MISOPENED, ASK, END, OBSERVE, HOLD)
 OTHER = "OTHER"
 
 
 def is_content(question):
     asks = question.get("asks") if isinstance(question, dict) else question
     return asks in (ASK, OBSERVE)
+
+
+def sheetable(question):
+    if not question or question.get("asks") == OBSERVE:
+        return False
+    if is_content(question):
+        parts = question.get(E.OPTIONS) or []
+        return 1 <= len(parts) <= E.MAX_PARTS
+    return 1 <= len(question.get("legal") or []) <= E.MAX_CHOICES
+
+
+CLOSED = "; closed: "
+
+
+def closed_parts(said):
+    text = str((said or {}).get("text", ""))
+    if not is_other(said) or CLOSED not in text:
+        return []
+    return [key.strip() for key in text.split(CLOSED, 1)[1].split(",") if key.strip()]
 
 
 def is_other(said):
@@ -132,6 +152,8 @@ def legal(events, asks, ticket, step):
         return () if is_review(ticket) else (ANSWER_FORM,)
     if asks == END:
         return () if short_of_target(events) is None else (END_FORM, _OPEN % ticket)
+    if asks == HOLD:
+        return (_OPEN % ticket,)
     return ()
 
 
@@ -189,7 +211,7 @@ def repeats(events, move, ticket, step, asks=None):
         return "closes %s on your word; nothing repeats" % move.split()[-1]
     if move.startswith("OVERRIDE OPEN "):
         wanted = move.split()[-1]
-        if asks == END:
+        if asks in (END, HOLD):
             return "keeps the run going: %s stays open and nothing ends" % ticket
         return ("declines the amendment: %s stays open and nothing changes" % ticket if wanted == ticket
                 else "voids %s and opens %s in its place; nothing repeats" % (ticket, wanted))

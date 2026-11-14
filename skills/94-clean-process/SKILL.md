@@ -4,6 +4,8 @@ description: Ends the current run and files away its records, so the process sto
 disable-model-invocation: true
 argument-hint: (none)
 ---
+**The rule for questions.** Before any question, first say you are going to ask. Give the context and the content, so the user understands. This is the last thing you write, after all tool calls. Then ask the question on a sheet. In a run, write that briefing as a message of its own, with no tool call, and end the turn there; the turn-end check sends you on to the sheet. End the briefing with a short block — your recommendation, and anything to act on — and put each option's cost in its description on the sheet as well: the sheet opens over the end of a long message. Each option's pros, cons and cost, and your recommendation, come in the briefing; anything to act on is in the chat as plain text, never only on the sheet (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask").
+
 
 # 94-clean-process — file the run away and let go of the project
 
@@ -38,6 +40,23 @@ deliverables, not run state. They stay exactly where they are.
 `~/.claude/metaxotrail-anchor/` — the check the run makes to see whether its records were rebuilt. It is inert once the run
 is archived and breaks nothing. Deleting that folder is yours, by hand, after the last run you care
 about is archived; no command does it for you, on purpose.
+
+## The backlog — before a finished run is filed, right after an abandoned one
+
+The steps are `00-ship`'s section *Before the run is filed* (`${CLAUDE_PLUGIN_ROOT}/skills/00-ship/SKILL.md`), and
+the order matters:
+
+- **A finished run:** update the backlog first, then `archive`.
+- **An abandoned run:** `archive --abandon` first, then the backlog, right after it — a run can be ended while a
+  review is open, and the backlog file cannot be written until no run is live.
+
+The steps: find the backlog — the file the working document's `Backlog:` line names, or else the file the request
+names; if neither names one, there is nothing to do. Mark each delivered item *built in <version>, run <hash>,
+commit <sha>*, and say what is left of an item partly done; an abandoned run marks its items *not done* or *partly
+done*. Add a row for each `OUT OF SCOPE:` finding of the issues file, naming its run and ticket (`<version>, run
+<hash>, <ticket>`) — unless a row already names that same run and ticket, or that same finding, or the run's records
+say it was fixed; a ticket alone is not a match, since ticket ids restart in every run. Tell the operator which were
+skipped and why. Show them the change, and leave it uncommitted.
 
 ## When to use it
 

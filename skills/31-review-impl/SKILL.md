@@ -75,7 +75,8 @@ If one has — a fix preceded you, and you were told so or the earlier findings 
 you — you are re-reviewing a FIX. Read, in this order:
 
 1. the findings the fix claims to discharge;
-2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each;
+2. the new facts the fix lists — every claim it wrote, and what it ran or opened to check each; a fix of
+   the code writes them in `docs/context_map_<slug>.md`, under its *Record of the repair* (since 1.1.0);
 3. what changed, against the right point — **a fresh review: what changed since the last fresh
    review; a review of your own fix: what changed since the previous round.** Not only the round
    before: after a clean round of your own fix, that round already holds every fix of the loop,
@@ -96,8 +97,9 @@ finding however small the diff was.
 
 ### Fresh eyes — and what to do when you can't have them
 If you are reading this in your own agent, with none of the conversation that produced the work,
-you ARE the fresh eyes and nothing needs arranging — skip to the rules below. **Otherwise there is
-no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
+you ARE the fresh eyes and nothing needs arranging — skip to the rules below. Inside a run that is
+every round, the rounds after a fix included (since 1.1.0); **this section is for a review used
+outside a run, where there is no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
 who reviewed what, so a delegated review buys you a claim nobody can verify and a failure mode
 (denied tool, nesting limit, an agent that dies silently). Review it yourself, do not skip it, and
 do not call it independent. Compensating rules:

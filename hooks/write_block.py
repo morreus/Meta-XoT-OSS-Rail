@@ -19,6 +19,7 @@ ALLOW, DENY = "allow", "deny"
 
 SUB, MAIN = "sub", "main"
 MARKER = "caller.json"
+SCRATCH_RECORD = "scratch.json"
 
 CALLER_MAX_AGE = 120
 
@@ -33,6 +34,7 @@ INSTRUCTIONS = ("OVERRIDE CLOSE", "OVERRIDE OPEN", "OVERRIDE ROLLBACK",
 BARE = ("OVERRIDE END",)
 KEYED = re.compile(r"\s*(?:[a-z]|[1-4][a-z](?:[\s,]+[1-4][a-z])*)\s*", re.IGNORECASE)
 MEASURED_MODES = ("auto", "default", "acceptEdits")
+CLICK_MODES = ("auto", "default", "acceptEdits")
 SHEET_HEADER = re.compile(r"(q\d+)(?:·([1-4]))?")
 RECOMMENDED = " (Recommended)"
 
@@ -43,6 +45,9 @@ CARVED_OUT = (K.ISSUES, K.PROCESS_LOG)
 WRITE_VERBS = ("cp", "mv", "rm", "tee", "dd", "truncate", "ln", "install",
                "chmod", "chown", "chgrp", "chflags")
 IN_PLACE_VERBS = ("sed", "perl")
+CHMOD_OPTIONS = re.compile(r"^-[RfvhHLPcECNiI]+$")
+CHMOD_MODE = re.compile(r"^([0-7]{1,4}|[ugoa]*[-+=][rwxXstugo]*([-+=][rwxXstugo]*)*(,[ugoa]*[-+=][rwxXstugo]*([-+=][rwxXstugo]*)*)*)$")
+SHELL_TOOLS = ("Bash", "Monitor")
 _PREFIX_WORDS = ("sudo", "command", "builtin", "exec", "nohup", "env", "time")
 
 _PUNCTUATION = "();<>|&`"
@@ -403,17 +408,46 @@ def _arguments(words):
     return out
 
 
-def _verb_targets(segment):
+def _verb_targets(segment, here=None):
     words = _command_words(segment)
     if not words:
         return []
     verb = os.path.basename(words[0])
+    if verb == "sed":
+        return _sed_targets(words[1:], here)
     if verb in IN_PLACE_VERBS and not any(w.startswith("-i") for w in words[1:]):
         return []
     if verb not in WRITE_VERBS + IN_PLACE_VERBS:
         return []
-    return [w.split("=", 1)[1] if verb == "dd" and "=" in w else w
-            for w in words[1:] if not w.startswith("-")]
+    if verb == "chmod" and not any(w.startswith("--reference") for w in words[1:]):
+        given = [w for w in words[1:] if not CHMOD_OPTIONS.match(w) and not w.startswith("--")]
+        if given and CHMOD_MODE.match(given[0]):
+            return given[1:]
+        return given
+    return [w.split("=", 1)[1] if verb == "dd" and "=" in w else w for w in words[1:] if not w.startswith("-")]
+
+
+def _sed_targets(rest, here):
+    in_place, words, after = False, [], False
+    for word in rest:
+        if after or word[:1] != "-":
+            if word:
+                words.append(word)
+        elif word == "--":
+            after = True
+        elif word[:2] == "--":
+            name = word.split("=", 1)[0]
+            in_place = in_place or (len(name) > 2 and "--in-place".startswith(name))
+        elif "i" in word[1:] or "I" in word[1:]:
+            in_place = True
+    if not in_place:
+        return []
+    if here is None:
+        return words
+    return [word for word in words
+            if _expanded(word) or "{" in word
+            or any(os.path.lexists(path) for path in (os.path.join(here, os.path.expanduser(word)),
+                                                       os.path.realpath(os.path.join(here, os.path.expanduser(word)))))]
 
 
 def _judge_command(command, project, payload):
@@ -430,7 +464,7 @@ def _judge_command(command, project, payload):
         if _runs_pipeline(segment) and not _legal_pipeline_call(segment):
             return (DENY, "`pipeline.py` is exempt for its own subcommands — %s — and this names "
                           "none of them" % ", ".join(LEGIT))
-        for target in _redirect_targets(segment) + _verb_targets(segment):
+        for target in _redirect_targets(segment) + _verb_targets(segment, here):
             if here is None and not os.path.isabs(os.path.expanduser(target)):
                 return (DENY, "this command moves the shell somewhere this hook cannot work out — "
                               "`cd -`, a variable, or a bare `pushd` — so a relative path after it "
@@ -491,13 +525,15 @@ def _joined(here, target):
 
 def decide(payload, project):
     tool = payload.get("tool_name")
-    if tool == "Bash":
-        command = payload.get("tool_input", {}).get("command", "")
+    if tool in SHELL_TOOLS:
+        command = (payload.get("tool_input") or {}).get("command") or ""
         import undo_block as U
         answer = _judge_command(command, project, payload)
         if answer[0] == DENY:
-            return (DENY, answer[1] + U.overruled(command, project))
-        return U.judge(command, project, payload)
+            return _below_root((DENY, answer[1] + U.overruled(command, project)), project)
+        return _below_root(U.judge(command, project, payload), project)
+    if tool == "AskUserQuestion":
+        return _below_root(_judge_sheet(payload, project), project)
     if tool in WRITE_TOOLS:
         given = payload.get("tool_input", {})
         path = next((given[field] for field in PATH_FIELDS if given.get(field)), "")
@@ -519,8 +555,8 @@ def marker_path(project):
 
 
 def write_marker(project, payload, clock):
-    if payload.get("tool_name") != "Bash" or not _names_pipeline(
-            payload.get("tool_input", {}).get("command", "")):
+    if payload.get("tool_name") not in SHELL_TOOLS or not _names_pipeline(
+            (payload.get("tool_input") or {}).get("command") or ""):
         return None
     caller = SUB if _reviewer_at_the_door(payload) else MAIN
     try:
@@ -528,6 +564,10 @@ def write_marker(project, payload, clock):
         with open(marker_path(project), "w") as handle:
             json.dump({"caller": caller, "at": clock(),
                        "session": payload.get("session_id") or None}, handle, sort_keys=True)
+        scratch = payload.get("scratchpad_dir")
+        if scratch and caller == MAIN and S.ours(_root(project), payload):
+            with open(os.path.join(K.address(project), SCRATCH_RECORD), "w") as handle:
+                json.dump({"dir": scratch, "at": clock()}, handle, sort_keys=True)
     except OSError:
         return None
     return caller
@@ -624,6 +664,7 @@ def override(payload, project, clock):
 def clicked(payload, project, clock):
     if payload.get("tool_name") != "AskUserQuestion" or payload.get("permission_mode") not in MEASURED_MODES:
         return None
+    project = _root(project)
     if not S.ours(project=project, payload=payload):
         return None
     response = payload.get("tool_response")
@@ -643,6 +684,10 @@ def clicked(payload, project, clock):
         text = "ANSWER %s" % replies[0][1]
     elif all(key for _part, _label, key in replies):
         text = F.chosen(question, " ".join(key for _part, _label, key in replies))
+    elif len(replies) > 1 and any(key for _part, _label, key in replies):
+        text = "%s %s%s%s" % (F.OTHER, "; ".join("part %s: %s" % (part, label) for part, label, key in replies
+                                                 if not key),
+                              F.CLOSED, ", ".join(key for _part, _label, key in replies if key))
     else:
         text = "%s %s" % (F.OTHER, replies[0][1] if len(replies) == 1 else
                           "; ".join("part %s: %s" % (part, label) for part, label, _key in replies))
@@ -684,6 +729,167 @@ def _replies_clicked(question, asked, answers):
     return [(part, got[part][0], got[part][1]) for part in wanted]
 
 
+SHEET = "sheet.json"
+
+
+def sheet_state(project, qid):
+    try:
+        with open(os.path.join(K.address(project), SHEET)) as handle:
+            state = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return state if isinstance(state, dict) and state.get("qid") == qid else None
+
+
+def write_sheet_state(project, state):
+    try:
+        with open(os.path.join(K.address(project), SHEET), "w") as handle:
+            json.dump(state, handle, sort_keys=True)
+    except OSError:
+        return None
+    return state
+
+
+def _sheet_fault(question, asked):
+    texts = [one.get("question") for one in asked]
+    if not asked or len(set(texts)) != len(texts):
+        return "each sheet question needs its own text"
+    parts = question.get(E.OPTIONS) or []
+    many = F.is_content(question) and len(parts) > 1
+    wanted = [str(p + 1) for p in range(len(parts))] if many else [""]
+    keyed, named = F.keys(question), F.labels(question)
+    got = []
+    for one in asked:
+        header = SHEET_HEADER.fullmatch(str(one.get("header", "")))
+        if header is None or header.group(1) != question.get("qid"):
+            return "the header must be %s%s, as `status` names the question" % (
+                question.get("qid"), "·<part>" if many else "")
+        if one.get("multiSelect"):
+            return "a sheet question takes one choice"
+        part = header.group(2) or ""
+        got.append(part)
+        offered = [meaning for key, meaning in keyed if key[:-1] == part]
+        allowed = set(offered) | set(named.get(meaning) for meaning in offered if named.get(meaning))
+        if not F.is_content(question) and len(offered) == 1:
+            allowed.add(TALK_IT_OVER)
+        for option in one.get("options") or []:
+            label = str(option.get("label", ""))
+            plain = label[:-len(RECOMMENDED)] if label.endswith(RECOMMENDED) else label
+            if label not in allowed and plain not in allowed:
+                return "the label %r is not one of %s's options, copied exactly as `status` prints them" % (
+                    label, question.get("qid"))
+    if sorted(got) != wanted:
+        return "the sheet must hold %s's parts exactly, each once" % question.get("qid")
+    return None
+
+
+def G_SHEET_BLOCKS():
+    import gate as _S8
+    return _S8.SHEET_BLOCKS
+
+
+def _judge_guard_sheet(payload, project, one):
+    import undo_block as U
+    if payload.get("permission_mode") not in CLICK_MODES:
+        return (DENY, "approval by click works in the auto, default and acceptEdits modes only; here they type the "
+                      "command into the chat on its own")
+    stored = U.stored_refusal(project)
+    if not stored:
+        return (DENY, "no refused command is waiting for their approval: the guard stores one when it refuses a "
+                      "command run on its own")
+    if not stored.get("briefed"):
+        return (DENY, "their approval sheet opens only after a message of its own: say what the command does, why it "
+                      "is needed and your recommendation, with no tool call, and end the turn; then the sheet")
+    if str(one.get("question", "")) != U.GUARD_PREFIX + stored.get("command", ""):
+        return (DENY, "the sheet's question must be exactly %r, the command the guard refused"
+                % (U.GUARD_PREFIX + stored.get("command", "")))
+    options = {str(option.get("label", "")): str(option.get("description", "") or "").strip()
+               for option in one.get("options") or []}
+    if set(options) != {U.RUN_IT, U.DO_NOT_RUN} or one.get("multiSelect"):
+        return (DENY, "the sheet takes two options, `%s` and `%s`, one choice" % (U.RUN_IT, U.DO_NOT_RUN))
+    if not options[U.RUN_IT]:
+        return (DENY, "`%s`'s description must say what the command does and why" % U.RUN_IT)
+    return (ALLOW, "")
+
+
+def clicked_guard(payload, project, clock):
+    import undo_block as U
+    project = _root(project)
+    if (payload.get("tool_name") != "AskUserQuestion" or payload.get("permission_mode") not in CLICK_MODES
+            or _reviewer_at_the_door(payload) or not S.ours(project, payload)):
+        return None
+    asked = (payload.get("tool_input") or {}).get("questions") or []
+    response = payload.get("tool_response")
+    answers = response.get("answers") if isinstance(response, dict) else None
+    if len(asked) != 1 or str(asked[0].get("header", "")) != "guard" or not isinstance(answers, dict):
+        return None
+    stored = U.stored_refusal(project)
+    text = str(asked[0].get("question", ""))
+    if not stored or text != U.GUARD_PREFIX + stored.get("command", ""):
+        return None
+    chosen = answers.get(text)
+    if chosen == U.RUN_IT:
+        return U.record_click(project, stored["command"], clock)
+    if chosen == U.DO_NOT_RUN:
+        U.clear_refusal(project)
+    return None
+
+
+TALK_IT_OVER = G._TALK_IT_OVER
+
+
+def _below_root(answer, project):
+    root = _root(project)
+    if answer[0] != DENY or os.path.realpath(root) == os.path.realpath(project) or "`cd %s`" % root in answer[1]:
+        return answer
+    return (DENY, "%s\nThe shell stands in %s, below the project root. `cd %s` goes back there."
+            % (answer[1], project, root))
+
+
+def _root(project):
+    import undo_block as U
+    return U.home(project) or project
+
+
+def _judge_sheet(payload, project):
+    project = _root(project)
+    try:
+        if not K.running(project) or not S.ours(project, payload):
+            return (ALLOW, "")
+        question = F.asking(_events(project))
+    except (K.BadBooks, P.BadPosition, C.BadChain, F.BadFloor):
+        return (ALLOW, "")
+    given = payload.get("tool_input") or {}
+    asked = given.get("questions") or []
+    guarded = [one for one in asked if str(one.get("header", "")) == "guard"]
+    if guarded:
+        if given.get("answers"):
+            return (DENY, "a `guard` sheet is their approval and opens unanswered; send it with no `answers`")
+        if len(guarded) != len(asked) or len(asked) != 1:
+            return (DENY, "a `guard` sheet holds its own question only, one; ask any other on a sheet of its own")
+        return _judge_guard_sheet(payload, project, guarded[0])
+    if question is None:
+        return (ALLOW, "")
+    if payload.get("permission_mode") not in MEASURED_MODES:
+        return (ALLOW, "")
+    fault = _sheet_fault(question, asked)
+    if fault:
+        return (DENY, "this sheet could not be recorded as the answer to %s: %s. Ask it again in that shape."
+                % (question["qid"], fault))
+    state = sheet_state(project, question["qid"])
+    if state is not None and not state.get("briefed"):
+        return (DENY, "%s's sheet opens only after a message of its own: write the briefing — what is to be decided "
+                      "and why, each option's gain and cost, your recommendation, and anything they must act on — as "
+                      "a message with no tool call, and end the turn. %s" % (
+                          question["qid"], "The turn-end check then sends you on to the sheet, which you open with "
+                          "nothing written beside it." if state.get("blocks", 0) < G_SHEET_BLOCKS() else
+                          "They asked to talk it over: open the sheet when the talk is done, with nothing written "
+                          "beside it."))
+    if state is not None:
+        write_sheet_state(project, dict(state, shown=True))
+    return (ALLOW, "")
+
+
 def source_of(name):
     import inspect
     return inspect.getsource(globals()[name])
@@ -702,9 +908,15 @@ def main(argv, stdin, stdout):
         return 0
     if payload.get("hook_event_name") == "PostToolUse":
         clicked(payload, project, _now)
+        clicked_guard(payload, project, _now)
         return 0
     write_marker(project, payload, _now)
     permission, reason = decide(payload, project)
+    import undo_block as U
+    if permission == ALLOW and reason == U.PERMITTED:
+        json.dump({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow",
+                                          "permissionDecisionReason": reason}}, stdout)
+        return 0
     if permission == ALLOW:
         return 0
     json.dump({"hookSpecificOutput": {"hookEventName": "PreToolUse",

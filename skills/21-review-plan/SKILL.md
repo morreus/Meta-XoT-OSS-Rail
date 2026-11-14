@@ -54,8 +54,9 @@ finding however small the diff was.
 
 ### Fresh eyes — and what to do when you can't have them
 If you are reading this in your own agent, with none of the conversation that produced the work,
-you ARE the fresh eyes and nothing needs arranging — skip to the rules below. **Otherwise there is
-no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
+you ARE the fresh eyes and nothing needs arranging — skip to the rules below. Inside a run that is
+every round, the rounds after a fix included (since 1.1.0); **this section is for a review used
+outside a run, where there is no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
 who reviewed what, so a delegated review buys you a claim nobody can verify and a failure mode
 (denied tool, nesting limit, an agent that dies silently). Review it yourself, do not skip it, and
 do not call it independent. Compensating rules:

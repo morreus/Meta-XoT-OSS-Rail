@@ -4,6 +4,8 @@ description: Used only inside a /00-ship run. When a review finds that later wor
 disable-model-invocation: true
 argument-hint: <the step number to rework — 10, 20, 30 or 40>
 ---
+**The rule for questions.** Before any question, first say you are going to ask. Give the context and the content, so the user understands. This is the last thing you write, after all tool calls. Then ask the question on a sheet. In a run, write that briefing as a message of its own, with no tool call, and end the turn there; the turn-end check sends you on to the sheet. End the briefing with a short block — your recommendation, and anything to act on — and put each option's cost in its description on the sheet as well: the sheet opens over the end of a long message. Each option's pros, cons and cost, and your recommendation, come in the briefing; anything to act on is in the chat as plain text, never only on the sheet (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask").
+
 
 Rework: $ARGUMENTS
 

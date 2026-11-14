@@ -112,6 +112,10 @@ artifact gets its result, in the new-facts table below. Then edit, to the plan.
 
 ## PHASE 2: PROVE EACH FIX — you OWN these repairs
 
+**Your two tables below are the only check between your fix and the fresh review.** Nobody reviews
+your fix before that reviewer does — no round of your own comes after it — so what the tables do not
+prove reaches the reviewer unproved.
+
 You are not a typist for someone else's findings. You own the repair, and a repair you have not
 checked is a guess handed to the next reviewer. The review is the police; you are the one who has
 to satisfy them that the thing they stopped you for is actually fixed.
@@ -144,7 +148,9 @@ you opened that shows it is true. The two middle columns are PHASE 1's result:
 
 Write this table into the record of the repair in the artifact too, beside the list of sections you
 edited, so the next reviewer reads it where it reads the fix. A fix that wrote no new fact says
-`none` there — it does not leave the table out.
+`none` there — it does not leave the table out. **A fix of the code writes its record into the context map
+document**, `docs/context_map_<slug>.md`, under a heading *Record of the repair*: the code has no record
+of its own, and the code reviewer reads it there.
 
 ⚠️ **A fact you changed is probably written down more than once.** The sweep rule above (Rules) is part of
 proving the fix, not a tidy-up after it: if the correction reached one section and three others

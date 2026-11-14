@@ -27,10 +27,10 @@ disallowed-tools: Edit Write NotebookEdit
 >    - **A document** — the map, the plan and the test plan in `WORKING.md`, the results in
 >      `TEST_RESULTS.md`, both at the project root: `status` prints a line
 >      beginning `the document's copy:`. It names the copy the pipeline kept of the document as an
->      earlier review saw it — a copy no agent can write — and the command to diff it. **A fresh
->      review: what changed since the last fresh review; a review of your own fix: what changed
->      since the previous round** — `status` names the one you must diff against, and a fresh
->      round must use the last fresh review's copy it names, not the latest beside it.
+>      earlier review saw it — a copy no agent can write — and the command to diff it. **A review
+>      after a fix: what changed since the last fresh review** — the copy `status` names; in a run
+>      begun before 1.1.0 it may name a latest copy beside it, and a fresh round uses the last fresh
+>      review's copy, not the latest.
 >      `git diff --no-index --word-diff <copy> <the document status names>` keeps a one-word
 >      change from marking a whole paragraph. *No copy* means the first review of a loop, or a copy that is missing or
 >      altered: read the whole document.
@@ -104,8 +104,9 @@ finding however small the diff was.
 
 ### Fresh eyes — and what to do when you can't have them
 If you are reading this in your own agent, with none of the conversation that produced the work,
-you ARE the fresh eyes and nothing needs arranging — skip to the rules below. **Otherwise there is
-no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
+you ARE the fresh eyes and nothing needs arranging — skip to the rules below. Inside a run that is
+every round, the rounds after a fix included (since 1.1.0); **this section is for a review used
+outside a run, where there is no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
 who reviewed what, so a delegated review buys you a claim nobody can verify and a failure mode
 (denied tool, nesting limit, an agent that dies silently). Review it yourself, do not skip it, and
 do not call it independent. Compensating rules:
@@ -246,9 +247,14 @@ not a question.
 shell variables. In `SC=/tmp/x; echo a > $SC/out.txt` it judges a file named `$SC/out.txt` inside
 the project, refused while the code is under review; after `cd $SC` it cannot tell where the shell
 stands, and a relative write after it is refused at any step. Write `echo a > /tmp/x/out.txt` and
-`cd /tmp/x && …` instead. To work on a copy of the project, make it with
-`mkdir -p <full path> && tar -C <project> -cf - --exclude .metaxotrail . | tar -x -C <full path>` —
-`tar -x -C` needs the folder to exist. While the code is under review `cp` or `ln` of a project
+`cd /tmp/x && …` instead. To work on a copy of the project, make a new one inside your session's scratch folder,
+named for the open ticket, `<scratch>/copy-<ticket>`, with
+`mkdir -p <scratch>/copy-<ticket> && tar -C <project> -cf - --exclude .git --exclude .metaxotrail --exclude node_modules --exclude .dart_tool --exclude "^./build" --exclude "^./Library" . | tar -x -C <scratch>/copy-<ticket>` —
+`tar -x -C` needs the folder to exist, and it removes nothing, so a folder used before keeps files the project has
+since deleted: never copy into one twice. The copy has no `.git`, so git commands there fail until you run
+`git init` in it; it has no books, no dependencies and no build output, and `lib/build` and the like, deeper
+than the top, stay in it. A copy in the scratch folder is emptied when the milestone is delivered: what a
+later milestone needs does not belong there. While the code is under review `cp` or `ln` of a project
 file is refused, and `git archive HEAD` copies the last commit, not the change under review.
 
 If there is **no active run** — `status` refuses because the event log is not there — you were

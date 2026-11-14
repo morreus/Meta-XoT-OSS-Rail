@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -7,6 +8,7 @@ import books as K
 import chain as C
 import floor as F
 import position as P
+import scope as S
 import write_block as W
 
 ALLOW, BLOCK, INERT = "allow", "block", "inert"
@@ -67,7 +69,7 @@ def _write(project, session, clock):
 
 def _broken(project, events):
     hurt = K.damage(project)
-    if hurt is not None:
+    if hurt is not None and not hurt.startswith("anchor behind"):
         return "the records have been altered — %s" % hurt
     try:
         P.open_ticket(events, False)
@@ -95,6 +97,62 @@ def free_stop(events):
                        "on a new `ask` box, rewritten as options, and wait for their click" % question["qid"])
     return False, ("%s offers the operator nothing in the run's present state, so it does not wait — carry on with "
                    "the work" % question["qid"])
+
+
+def note_briefing(project, events, payload):
+    if not S.ours(project, payload) or not str(payload.get("last_assistant_message") or "").strip():
+        return None
+    import undo_block as U
+    stored = U.stored_refusal(project)
+    if stored and not stored.get("briefed"):
+        U._write_json(os.path.join(K.address(project), U.REFUSED), dict(stored, briefed=True))
+    question = F.asking(events)
+    if question is None:
+        return None
+    state = W.sheet_state(project, question["qid"])
+    if state is None or state.get("briefed"):
+        return state
+    return W.write_sheet_state(project, dict(state, briefed=True))
+
+
+SHEET_BLOCKS = 2
+
+
+def sheet_wait(project, events, payload):
+    question = F.asking(events)
+    if (question is None or not F.sheetable(question) or payload.get("permission_mode") not in W.MEASURED_MODES
+            or not S.ours(project, payload)):
+        return None
+    state = W.sheet_state(project, question["qid"])
+    if state is None or state.get("shown") or state.get("blocks", 0) >= SHEET_BLOCKS:
+        return None
+    W.write_sheet_state(project, dict(state, blocks=state.get("blocks", 0) + 1))
+    if not state.get("briefed"):
+        return ("%s is asked and its sheet has not opened. Write the briefing as a message of its own, with no tool "
+                "call — what is to be decided and why, each option's gain and cost, your recommendation, and anything "
+                "they must act on — and end the turn there. The turn-end check then sends you on to the sheet."
+                % question["qid"])
+    return ("%s's briefing is in the chat. Now open its sheet (AskUserQuestion), headed %s as `status` shows it, "
+            "with nothing written beside it." % (question["qid"], question["qid"]))
+
+
+_FENCE = re.compile(r"```.*?```", re.DOTALL)
+
+
+def guess(payload):
+    try:
+        if payload.get("stop_hook_active"):
+            return None
+        text = _FENCE.sub("", str(payload.get("last_assistant_message") or ""))
+        lines = [line.strip().strip("*_`>").strip() for line in text.splitlines()]
+        lines = [line for line in lines if line]
+        if not lines or not lines[-1].endswith("?"):
+            return None
+        return ("Your message ends with a question and no sheet. Ask it on a multiple-choice sheet "
+                "(AskUserQuestion): the explanation stays in the chat, each option's gain and cost in it, and the "
+                "sheet holds the choices. If it was not a question to the user, end the turn again.")
+    except Exception:
+        return None
 
 
 def credited_commits(events):
@@ -153,6 +211,12 @@ def live_run_above(project):
         here = parent
 
 
+def running_in_background(payload):
+    tasks = payload.get("background_tasks")
+    return isinstance(tasks, list) and any(isinstance(task, dict) and task.get("status") == "running"
+                                           for task in tasks)
+
+
 def decide(project, payload):
     try:
         if not K.running(project):
@@ -163,10 +227,11 @@ def decide(project, payload):
             if above is not None:
                 return (BLOCK, "there are no books at %s, but a live run sits above it at %s. A "
                                "session started below the project root would end every turn "
-                               "unjudged, so this one is refused instead: restart the session at "
-                               "%s. Nothing here has been judged against that run — the gate "
-                               "reads the folder it was given and no other."
-                        % (project, above, above))
+                               "unjudged, so this one is refused instead: if the shell moved there, "
+                               "`cd %s` goes back; if the session started there, "
+                               "restart it at %s. Nothing here has been judged against that run — the "
+                               "gate reads the folder it was given and no other."
+                        % (project, above, above, above))
             return (ALLOW, "")
     except K.BadBooks as exc:
         return (BLOCK, "the books are broken — %s. %s ends a run whose log can be read — this one "
@@ -178,8 +243,15 @@ def decide(project, payload):
         return (BLOCK, "the books cannot be read — %s. Nothing that cannot be read is allowed; "
                        "%s ends a run whose log can be read — this one cannot be, so the operator "
                        "repairs the log or moves it aside by hand." % (exc, ABANDON))
+    try:
+        note_briefing(project, events, payload)
+    except (K.BadBooks, ValueError):
+        pass
     hurt = _broken(project, events)
+    import pipeline as G
     if hurt:
+        if G._damaged_at_target(project, events):
+            return (BLOCK, "%s. A run whose books are broken never lets a turn end; %s" % (hurt, G._target_ways_out(project)))
         return (BLOCK, "%s. A run whose books are broken never lets a turn end; %s ends the run and "
                        "says so on the record." % (hurt, ABANDON))
     owner = bound(project)
@@ -194,10 +266,17 @@ def decide(project, payload):
     report = _report(project, events)
     free, why = free_stop(events)
     if free:
+        held = sheet_wait(project, events, payload)
+        if held:
+            return (BLOCK, held)
         return (ALLOW, report)
+    if G._damaged_at_target(project, events):
+        return (BLOCK, "%s%s" % (report, G._target_ways_out(project)))
     if C.score(events) == C.target(C.chain_of(events)):
+        return (BLOCK, "%sThe run is at its target. Before it is filed, %s; then `pipeline.py archive` ends the run, "
+                       "and the gate stops holding." % (report, G.filing_words()))
+    if running_in_background(payload):
         return (ALLOW, report)
-    import pipeline as G
     return (BLOCK, "%s%sThe run is not finished. %s\n%s"
             % (report, why + "\n",
                "Close the open ticket, or ask the operator with `question`.",
@@ -223,6 +302,15 @@ def main(argv, stdin, stdout, stderr):
         return 2
     if verdict == BLOCK:
         stderr.write(words.rstrip() + "\n")
+        return 2
+    sent_back = None
+    try:
+        if not (K.running(project) and F.asking(K.read_log(project)) is not None):
+            sent_back = guess(payload)
+    except Exception:
+        sent_back = None
+    if sent_back:
+        stderr.write(sent_back + "\n")
         return 2
     if verdict == ALLOW and words:
         stderr.write(words.rstrip() + "\n")

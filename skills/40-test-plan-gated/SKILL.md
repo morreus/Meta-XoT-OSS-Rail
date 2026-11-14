@@ -104,6 +104,16 @@ scenarios, the coverage matrix and the prioritisation go under **What is tested*
 and the honest *nothing to test* case under **What is not tested**; the commands, fixtures and
 preconditions under **How to run it**.
 
+**The plan's own heading.** Put the three headings after a heading naming the milestone, written once:
+`## Test plan of M2` (a title may follow a colon: `## Test plan of M2: the export`), the three one level
+deeper. The plan is found by that heading, wherever it stands; an earlier milestone's plan is never read
+for this one. Three more things:
+- **A plan with no milestones** writes no such heading, and keeps one *What is tested*.
+- **A plan redone after a rollback** removes the old one, or renames its heading `Superseded test plan of
+  M2` — or, with no milestones, `Superseded: What is tested` — so that only one plan answers to the name.
+- **A milestone with nothing to test** keeps the table's title row with no rows under it, and says why
+  under *What is not tested*.
+
 **Categories — use the ones the stack actually has** (from `stack_rules/<stack>.md`), e.g.:
 - **Automated** (unit/integration) in the project's framework (`pytest` / Unity Test Framework / `flutter test`).
 - **Reproducibility / determinism** — same input → same output / byte-identical artifact (data & pipelines).
@@ -112,17 +122,24 @@ preconditions under **How to run it**.
 
 **Coverage matrix** — areas × test type.
 
-**Per scenario** (T001, T002, …):
-| Field | Content |
-|-------|---------|
-| ID / Name | T0NN / descriptive |
-| Source | context map / plan / code / web |
-| Priority | P0 (critical) … P3 (low) |
-| Preconditions | required state/data — **and how you will arrange it** (see below) |
-| Steps | action → expected observable result |
-| Acceptance criteria | **measurable, pass/fail** — no "works correctly"; include perf/data thresholds where relevant |
-| Edge cases | null/empty/boundary/failure/concurrency |
-| Evidence | output / log excerpt / screenshot / metrics |
+**The tests: one table, one row per test**, under *What is tested*, with exactly these column names:
+
+| ID | P | Covers | Precondition, and how it is arranged | Steps | Pass when | Evidence | Stop step |
+|---|---|---|---|---|---|---|---|
+
+- **ID** — `T` and three digits: T001, T002, …; no ID twice.
+- **P** — P0 (critical) … P3 (low).
+- **Covers** — the plan's rule (`AR…`), the risk or the changed behaviour the test answers to, and the
+  edge it takes: null, empty, boundary, failure, concurrency.
+- **Precondition, and how it is arranged** — the starting state, **and how you will arrange it** (see below).
+- **Steps** — action → expected observable result.
+- **Pass when** — **measurable, pass/fail**: no "works correctly"; perf or data thresholds where relevant.
+- **Evidence** — the output, log excerpt, screenshot or metric that will show it.
+- **Stop step** — how a service the test starts is stopped and seen stopped, or `none`.
+
+Every cell is filled; a cell may hold several sentences. A pipe inside a cell is written `\|`, or it
+splits the cell. A fix of the plan then changes rows, and the next
+review reads the rows that changed.
 
 **Every precondition must be one you can ARRANGE.** For each scenario, say how its starting state
 comes about: a fixture, an emulator or test instance, a seeded local database, a mock. "Production
@@ -147,7 +164,11 @@ though it will run and leave the discovery to the person executing it.
 
 ## PHASE 3: Test-quality self-check (challenge your own plan)
 - Does every changed code path / branch have at least one test?
-- Are acceptance criteria pass/fail and objective — not "looks right"?
+- Is every *Pass when* cell pass/fail and objective — not "looks right"?
+- **Put three questions to every P0 row**, the three a review of the test plan blocks on: can it be run as
+  written — its precondition arranged, its steps carried out? Does each P0 or P1 rule of the plan, and each
+  behaviour the milestone changed, have a row? Would this row pass on broken code — name the break that would
+  slip through, and if one does, make the row catch it.
 - **Could the feature be broken and a test still pass?** (too-easy tests — fix them.)
 - Is every Project-Risk Touchpoint covered by a test?
 - Are edge cases and error paths covered, not just the happy path?
@@ -169,10 +190,11 @@ verify. Do not import "lessons" from elsewhere in the conversation.
 
 ## RULES
 1. **Evidence-based** — every test traces to context map / plan / code / web.
-2. **Measurable acceptance criteria only** — no vague "works".
+2. **A measurable *Pass when* only** — no vague "works".
 3. **Categorize honestly** — don't mark a human-judgment test as automated.
 4. **Prioritize by risk** — P0 covers the highest-impact scenarios.
 5. **No live/irreversible actions in tests** — for production or money-moving code (e.g. anything in the context map's Project-Risk Touchpoints), tests use dry-run / sandbox accounts / fixtures, never real payments, orders or production writes.
+6. **Every service a test starts has a stop step** — an emulator, a server, a database, a watcher: the plan names the step that stops it and how to see it stopped, so nothing is left open on the network after the run.
 
 Stop after creating the test plan. Do not execute tests.
 
@@ -198,7 +220,9 @@ and that half is yours.
   the fix's new-facts table into the record of the repair, in the document it fixes, under the
   line `New facts (<ticket>):` on a line of its own, the table on the lines after it — or, if the
   fix wrote no new fact, `New facts (<ticket>): none`. Nothing else goes on that line: the close
-  reads it whole, so `…: TODO` is refused. A fix of the code (step 30) owes no line.
+  reads it whole, so `…: TODO` is refused. **A fix of the code (step 30) owes the same line**, in
+  `WORKING.md`, under the record of the repair: with no round of your own after a fix, your two tables
+  are the only check before a fresh review reads it.
 - **The map and the plan** — `10-context-map`, `20-plan-impl`, and either one redone under
   `93-rollback`. Before you close, ask every question that is the user's to answer (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`,
   "Ask, don't assume") with `question ask`
@@ -270,9 +294,14 @@ previous milestone's commit.
 shell variables. In `SC=/tmp/x; echo a > $SC/out.txt` it judges a file named `$SC/out.txt` inside
 the project, refused while the code is under review; after `cd $SC` it cannot tell where the shell
 stands, and a relative write after it is refused at any step. Write `echo a > /tmp/x/out.txt` and
-`cd /tmp/x && …` instead. To work on a copy of the project, make it with
-`mkdir -p <full path> && tar -C <project> -cf - --exclude .metaxotrail . | tar -x -C <full path>` —
-`tar -x -C` needs the folder to exist. While the code is under review `cp` or `ln` of a project
+`cd /tmp/x && …` instead. To work on a copy of the project, make a new one inside your session's scratch folder,
+named for the open ticket, `<scratch>/copy-<ticket>`, with
+`mkdir -p <scratch>/copy-<ticket> && tar -C <project> -cf - --exclude .git --exclude .metaxotrail --exclude node_modules --exclude .dart_tool --exclude "^./build" --exclude "^./Library" . | tar -x -C <scratch>/copy-<ticket>` —
+`tar -x -C` needs the folder to exist, and it removes nothing, so a folder used before keeps files the project has
+since deleted: never copy into one twice. The copy has no `.git`, so git commands there fail until you run
+`git init` in it; it has no books, no dependencies and no build output, and `lib/build` and the like, deeper
+than the top, stay in it. A copy in the scratch folder is emptied when the milestone is delivered: what a
+later milestone needs does not belong there. While the code is under review `cp` or `ln` of a project
 file is refused, and `git archive HEAD` copies the last commit, not the change under review.
 
 ## Getting a step reviewed
@@ -286,18 +315,18 @@ file is refused, and `git archive HEAD` copies the last commit, not the change u
   the fork; the hook sees that the close came from a subagent, and a close on this ticket from
   your thread is refused by name. **Do not wrap it in an `Agent` call** — the one thing a wrapper
   adds is a prompt you write, and a reviewer handed its conclusion is where reviews go wrong.
-- **`orchestrator`** — this is the round that follows your own fix, and it is yours: carry out
-  the plain review skill's method yourself, on your own eyes, under its compensating rules, and
-  close it as the closing section of the `-gated` review skill says. A clean orchestrator round does **not** complete
-  the step — the pipeline then opens a fresh **independent** round, which only the fork may
-  close. Your round is what earns that fresh pair of eyes, not what replaces them.
+- **`orchestrator`** — only in a run begun under an older release, where a review ticket was cut
+  to you after a fix: carry it out yourself with the plain review skill's method and the compensating
+  rules of its *Fresh eyes* section — re-derive, never re-read; invert the burden of proof; attack what you
+  are surest of; say it was your own review — and close it as before; the next round is a fresh one. Since 1.1.0 every review round is the fork's, the rounds
+  after a fix included.
 
 What the pipeline does with a verdict is set out below, not yours to choose:
 
 - **`0H 0M` from an independent round** — the step completes and the next opens.
 - **findings** — `92-fix` opens on the step reviewed, and it is yours. Discharge every HIGH and
-  MEDIUM with proof, close it `fixed` as above, and the pipeline reopens the same review as your
-  round.
+  MEDIUM with proof, close it `fixed` as above, and the pipeline opens a fresh review — the
+  fork's, which reads what your fix changed.
 - **a rollback ordered** — the reviewer's close carried `ROLLBACK <step>`; `93-rollback` opens on
   that earlier step and everything built on it loses its credit. A target the reviewer cannot
   reach is not silently narrowed: the run **holds** and asks the operator.
@@ -309,8 +338,15 @@ Some states have no legal move an agent may make, and the pipeline **asks** rath
 open ticket and prints the legal replies. The kinds are the pipeline's, not yours — `unreachable`
 (a rollback target this step cannot reach), `input` (the thing this step works from is wrong),
 `unknown` (a review's line could not be read, so only the operator can clear the close), `misopened` (the pipeline cut the wrong ticket), `end` (the
-run should stop short of its target) — and a question that has no legal reply in the current state is
+run should stop short of its target), `hold` (they said stop: it works at any ticket, a review's included, and they alone lift it) — and a question that has no legal reply in the current state is
 refused rather than written. Every legal reply is printed with what it repeats; show them both.
+
+**If `status` says *anchor behind by N events*,** the log is whole and only the head kept outside the project lagged,
+as when a disk was full. A close is refused until it is repaired, and the repair is theirs:
+`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/pipeline.py" anchor` runs only on their approval of that command, on its sheet. At
+target, any damage stops `archive`; the ways out are that repair, or `archive --abandon` on their approval. After the
+repair the run is an ordinary run at target: the backlog as `00-ship`'s *Before the run is filed* says, then
+`archive`. After `archive --abandon`, the backlog right after it.
 
 **And two kinds are about the WORK, not the state: `ask` and `observe`.** When the artifact cannot be finished
 without a decision that is the operator's — which of two designs of what the user sees or does, what a requirement means, a
@@ -331,11 +367,22 @@ waiting at the step's next close, or when you ask a new question — `question` 
 tell them in the chat before the new box. If the work must wait for their answer, it is a decision: `ask`.
 
 **Ask once, then wait.** While a question waits on them — `status` prints *WAITING ON THE OPERATOR* —
-end your turn and write nothing more: no reminder, no *"still waiting"*, no new question. The gate lets
-the turn end every time while they are being asked, and `question` asks nothing new meanwhile but `end`.
+end your turn and write nothing more: no reminder, no *"still waiting"*, no new question. Once the sheet has
+opened, the gate lets the turn end every time while they are being asked — before that it holds the turn twice at most,
+for the briefing and for the sheet — and `question` asks nothing new meanwhile but `end`.
 When they reply, run `status` and drive the run on to its target. **Before you tell them their answer was
 recorded, run `status` and see `answered q<n>`**, or the move applied; if it is not there, nothing was
 recorded — say so, and show them the same question again.
+
+**The order of a question.** Before any question, first say you are going to ask. Give the context and the content, so the user understands. This is the last thing you write, after all tool calls. Then ask the question on a sheet. Here that is three moves: `question …`; then the briefing as a
+message of its own, with no tool call, ending the turn — text beside a tool call can reach them cut down to one line;
+then, when the turn-end check sends you on, the sheet, with nothing written beside it. The briefing ends with a
+short block — your recommendation, and anything they must act on — because the sheet opens over the end of a long
+message, and each option's cost stands in its description on the sheet as well. The turn-end check holds the turn at
+most twice for one question: once to ask for the briefing, once to send you on to the sheet. The guard refuses a numbered
+question's sheet before that message, and refuses a sheet it could not record — a header that is not `q<n>`, a label
+not copied exactly. **When they say stop** — at any step, a review's included — ask `question hold "<their words>"`: the
+run waits, and their *keep going* lifts it.
 
 **How to ask.** They decide from what they read before the sheet: the briefing in the chat
 (`${CLAUDE_PLUGIN_ROOT}/stack_rules/_shared.md`, "Brief before you ask"), with each option's pros, its cons
@@ -350,8 +397,8 @@ back to its code step"* — and that it repeats the steps the lock line names. S
 one sheet question per part, headed `q<n>` for a question of one part and `q<n>·<part>` for each part of
 a question in parts, each sheet question's text different from the others'. **Each option's label is the option exactly as recorded** — a content question's label, a
 state question's plain label, copied exactly as `status` prints it after *on the sheet:* (MetaXoTRail writes it, naming
-the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key
-and a one-line reminder of what it means go in the option's description; the full pros, cons and cost are in the briefing. A state
+the step and the milestone, and maps their click back to the move) — with nothing added but *" (Recommended)"* on the recommended one; its key,
+a one-line reminder of what it means and its cost go in the option's description; the full pros, cons and cost are in the briefing. A state
 question of one move gets a second option, *"Talk it over first"*: their click on it is no move, so the question
 is asked again under a new `q<n>`, and the run waits while they ask you about it. A state question of more than four moves is not put on the sheet. Tell them to click their
 choice, or type the key: the hook records their click in the default, acceptEdits and auto permission modes, and the key in every mode —
@@ -363,14 +410,14 @@ their click. Any other reply under "Other" is recorded as their words — `OTHER
 - **At a content decision, ask again, at once.** Rewrite their words into a well-formed option — correct
   wording, what it means for the work — and if it has a drawback or cannot be done, say why in the chat
   first. Then a new `question ask` whose options are theirs, rewritten, with the closest option that can be
-  done beside it if theirs cannot, and show its sheet **in the same turn**, saying to read the chat for the
-  reasons. Only their click on the new box decides; the step stays held until then. If `question ask` is
+  done beside it if theirs cannot, and brief it as a message of its own, then its sheet, as *The order of a
+  question* says — the guard refuses the sheet in the same message. Only their click on the new box decides; the step stays held until then. If `question ask` is
   refused because the first question is still waiting — their reply was not recorded, as where no click is
   recorded — **do not ask again**: write their words, rewritten, in the chat; they type `ANSWER <those words>`, or a
   key, to the question already waiting.
 - **At a state question, never ask a new question.** Their words are no move: the pipeline refuses them and
   asks the same question again under a new `q<n>`. Say in the chat which move their words come closest to,
-  and why none fits if none does, then show that question's sheet.
+  and why none fits if none does, in a message of its own; then that question's sheet.
 
 Text they type that is neither a key nor a whole instruction is discussion: answer it in the chat; the
 question still waits.
@@ -386,7 +433,7 @@ prints and tell them the five forms:
   from the set the pipeline enumerated.
 - `OVERRIDE END` — they end the run short of its target, answering an `end` question. Only then does
   `archive --abandon` run — as your next command: a close after their answer lapses it. Never pass that
-  flag on your own word. The `end` question's other reply, `OVERRIDE OPEN <its ticket>`, keeps the run
+  flag on your own word. Right after it, update the backlog as `00-ship`'s *Before the run is filed* says. The `end` question's other reply, `OVERRIDE OPEN <its ticket>`, keeps the run
   going: nothing ends, and you go on with the open step.
 - `ANSWER <your answer>` — their answer to a content question. It authorises nothing.
 

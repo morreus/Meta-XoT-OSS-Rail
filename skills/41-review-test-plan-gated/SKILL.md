@@ -27,10 +27,10 @@ disallowed-tools: Edit Write NotebookEdit
 >    - **A document** — the map, the plan and the test plan in `WORKING.md`, the results in
 >      `TEST_RESULTS.md`, both at the project root: `status` prints a line
 >      beginning `the document's copy:`. It names the copy the pipeline kept of the document as an
->      earlier review saw it — a copy no agent can write — and the command to diff it. **A fresh
->      review: what changed since the last fresh review; a review of your own fix: what changed
->      since the previous round** — `status` names the one you must diff against, and a fresh
->      round must use the last fresh review's copy it names, not the latest beside it.
+>      earlier review saw it — a copy no agent can write — and the command to diff it. **A review
+>      after a fix: what changed since the last fresh review** — the copy `status` names; in a run
+>      begun before 1.1.0 it may name a latest copy beside it, and a fresh round uses the last fresh
+>      review's copy, not the latest.
 >      `git diff --no-index --word-diff <copy> <the document status names>` keeps a one-word
 >      change from marking a whole paragraph. *No copy* means the first review of a loop, or a copy that is missing or
 >      altered: read the whole document.
@@ -103,8 +103,9 @@ finding however small the diff was.
 
 ### Fresh eyes — and what to do when you can't have them
 If you are reading this in your own agent, with none of the conversation that produced the work,
-you ARE the fresh eyes and nothing needs arranging — skip to the rules below. **Otherwise there is
-no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
+you ARE the fresh eyes and nothing needs arranging — skip to the rules below. Inside a run that is
+every round, the rounds after a fix included (since 1.1.0); **this section is for a review used
+outside a run, where there is no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
 who reviewed what, so a delegated review buys you a claim nobody can verify and a failure mode
 (denied tool, nesting limit, an agent that dies silently). Review it yourself, do not skip it, and
 do not call it independent. Compensating rules:
@@ -128,6 +129,25 @@ Every finding carries one of three words — HIGH, MEDIUM, LOW — and this is t
 decides which. Not how serious it feels, not how much work it is. Two reviewers may find different
 things; they must not grade the same thing differently.
 
+### What blocks at this review — three cases, and nothing else
+A test plan is not the system: its tests are carried out at the next step, where a test that is wrong
+shows itself and is mended. So at this review the test above is applied through these cases:
+
+- **HIGH** — a P0 test that can only be carried out by changing live or real users' data.
+- **MEDIUM**, and only these three:
+  1. **a test that cannot be carried out as written** — its precondition cannot be arranged, or its
+     steps cannot be done;
+  2. **a P0 or P1 rule of the plan, or a behaviour the milestone changed, with no test**;
+  3. **a P0 test that would pass on broken code** — shown by naming the break that would slip through.
+- **LOW** — everything else: wording, counts, line numbers, the evidence's format, and a test that might
+  fail on correct code (carrying it out shows that, and the tester mends the test there).
+
+**The three cases grade the test plan's own tests, and nothing else.** A defect the test plan shows in
+this milestone's code, or in the plan or the map it was built from, is not a finding about a test: it is
+graded by the one test above, and when it blocks, the review closes with it and orders the rollback —
+`ROLLBACK 30` (in a `/00-ship` run) for this milestone's code, or the step whose document was wrong. The scope's cap below does
+not apply to it.
+
 ---
 
 ## On the highest-numbered milestone
@@ -136,28 +156,50 @@ everything the earlier milestones shipped. The absence of milestone code there i
 finding**; a plan that tests the whole feature end-to-end is the right plan, and one that tests
 nothing because "there is no code" is the wrong one.
 
+## SCOPE — this milestone's tests
+
+This review covers **the test plan of the milestone you were given** — its tests, against that
+milestone's changes and the plan's rules for it.
+
+**Out of scope — and this is a rule, not a preference**
+- An earlier milestone's test plan, or a later one's.
+- Code outside this milestone, and defects it merely sits next to.
+- Any document other than this test plan: the map, the plan, the results, the skills.
+
+**One exception:** a defect the test plan shows in this milestone's code, or in the plan or the map it was
+built from, is in scope — it orders a rollback, as *What blocks at this review* says.
+
+**Out-of-scope findings are capped at Low.** However real they are, this milestone's test plan cannot
+discharge them, and a finding that cannot be discharged blocks the stage for ever. Record them plainly:
+**the finding text begins with `OUT OF SCOPE:`**, says which milestone or document owns it, and so
+reaches the operator's backlog at the end of the work.
+
 ## Reviewing the test plan (tag findings High / Medium / Low)
 
 **0. CAN IT RUN? Take every scenario's preconditions FIRST, before anything else.** For each one,
 ask how that starting state is arranged — fixture, emulator, seeded instance, mock. If the answer
 is "production will happen to be in this state", the scenario does not exist, however well it is
-written, and that is a **High**. Judge it against reality, not the plan's own optimism: if the
+written: it cannot be carried out as written, a **MEDIUM** — and a **HIGH** when it is a P0 test that could
+only be carried out by changing live or real users' data. Judge it against reality, not the plan's own optimism: if the
 precondition is an empty queue, is the live queue something the tester controls?
 
 Do this before coverage, criteria or priorities. A plan can be immaculate on all of those and still
 be unrunnable, and reviewing in the usual order finds the polish and misses the floor. Worse: an unarrangeable precondition
 pressures whoever runs it to CREATE that state, and the states worth testing are the destructive
-ones. A scenario that can only run by deleting real users' data is a High whatever else it gets
-right.
+ones. A P0 scenario that can only run by deleting real users' data is a High whatever else it gets
+right; any other such scenario, a Medium.
 
-1. **Coverage** — read the diff; does every changed code path/branch have a test? List uncovered paths.
+1. **Coverage** — read the diff; does every changed code path/branch have a test? List uncovered paths: a P0
+   or P1 rule or a changed behaviour with no test is a MEDIUM (case 2); a lesser path, a LOW.
 2. **Test-type checklist actually walked** — was EACH of the test-type categories (happy/boundary/invalid/null/error-paths/idempotency/state/concurrency/scale/precision/time/external/security/regression + stack-specific) either turned into a scenario OR marked N/A with a real reason? **Any whole type silently skipped is a finding** — name the missing edge cases.
-3. **Acceptance criteria** — measurable, pass/fail? Any subjective "works correctly" criterion is a finding.
+3. **Pass when** — measurable, pass/fail? A subjective "works correctly" cell is a finding: a MEDIUM when it
+   lets a P0 test pass on broken code (case 3), a LOW otherwise.
 4. **Too-easy tests / instruments that cannot fail** — for EVERY test and control ask: *what would
-   this look like if the feature were absent?* If the answer is "the same", the test is worthless.
-   Demand evidence of a mutation check (break it, watch it fail) for anything claimed as passing.
-   Flag unconditional logging, controls that don't actually disable, and durations/counters that
-   would read identically if the code never ran.
+   this look like if the feature were absent?* If the answer is "the same", the test is worthless: a
+   MEDIUM for a P0 test (case 3), name the break; a LOW for the others. Flag unconditional logging,
+   controls that don't actually disable, and durations/counters that would read identically if the code
+   never ran. Do not ask the plan for evidence of a mutation check: breaking the code on purpose is the
+   test step's *PHASE 1b*, and the review of the results checks it.
 5. **Risk coverage** — is every Project-Risk Touchpoint mapped to a test? Do irreversible-action tests use dry-run/fixtures, never live?
 6. **Priorities** — are the P0s actually the highest-impact scenarios?
 
@@ -252,9 +294,14 @@ not a question.
 shell variables. In `SC=/tmp/x; echo a > $SC/out.txt` it judges a file named `$SC/out.txt` inside
 the project, refused while the code is under review; after `cd $SC` it cannot tell where the shell
 stands, and a relative write after it is refused at any step. Write `echo a > /tmp/x/out.txt` and
-`cd /tmp/x && …` instead. To work on a copy of the project, make it with
-`mkdir -p <full path> && tar -C <project> -cf - --exclude .metaxotrail . | tar -x -C <full path>` —
-`tar -x -C` needs the folder to exist. While the code is under review `cp` or `ln` of a project
+`cd /tmp/x && …` instead. To work on a copy of the project, make a new one inside your session's scratch folder,
+named for the open ticket, `<scratch>/copy-<ticket>`, with
+`mkdir -p <scratch>/copy-<ticket> && tar -C <project> -cf - --exclude .git --exclude .metaxotrail --exclude node_modules --exclude .dart_tool --exclude "^./build" --exclude "^./Library" . | tar -x -C <scratch>/copy-<ticket>` —
+`tar -x -C` needs the folder to exist, and it removes nothing, so a folder used before keeps files the project has
+since deleted: never copy into one twice. The copy has no `.git`, so git commands there fail until you run
+`git init` in it; it has no books, no dependencies and no build output, and `lib/build` and the like, deeper
+than the top, stay in it. A copy in the scratch folder is emptied when the milestone is delivered: what a
+later milestone needs does not belong there. While the code is under review `cp` or `ln` of a project
 file is refused, and `git archive HEAD` copies the last commit, not the change under review.
 
 If there is **no active run** — `status` refuses because the event log is not there — you were

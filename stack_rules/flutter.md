@@ -39,4 +39,5 @@
 - If both platforms are targeted, sanity-check iOS and Android for platform-channel/permission changes.
 
 ## Common gotchas
+- A device build made with `--dart-define` keeps those defines in `ios/Flutter/Generated.xcconfig` for the next build. Before an archive, run `flutter build ios --config-only --release` without the defines, and check that file holds none (measured on Flutter 3.44.9).
 - `setState() called after dispose()`; `BuildContext` used after `await` without `mounted` check; `RenderFlex overflowed`; hot-reload preserving stale state (use hot-restart to verify); missing `const` causing avoidable rebuilds; `ListView` without `itemExtent`/keys causing scroll jank.

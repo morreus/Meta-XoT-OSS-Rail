@@ -5,7 +5,7 @@ These apply to every MetaXoTRail skill regardless of stack. Stack-specific files
 ## Working principles
 - **Evidence over claims.** Every assertion needs a receipt: file path + line, git commit, or web source. If you can't find evidence, mark it UNKNOWN — never guess.
 - **Ask, don't assume — but only when it matters.** Ask the user ONLY when BOTH: (a) you can't resolve it from evidence (code/git/web/CLAUDE.md), AND (b) getting it wrong would change the approach or cause a real problem. For trivial, reversible, or obvious-default choices: pick the sensible default, state it, move on. Batch questions; never ask for the sake of asking. If you already know the likely answer and the cost of being wrong is low, don't ask — proceed and note the assumption. Zero questions is a fine outcome. **Never hand the user a technical choice** — a library, a pattern, how the code is built: decide it, give your reasons in the plan, and let its review check it. A technical unknown is settled from evidence or by a check in the plan's first part, never by asking. Still ask about what the work should do, for facts only the user has, and for actions only the user can take. The one exception is the development stack (`10-context-map`, §9), which sets cost and risk.
-- **Brief before you ask.** Before any question — on a sheet or answered by typing — write in the chat, in plain business words, what the user needs to decide or act without having watched the work: what the work is and where it stands, what is to be decided and why now, the content it is about, the options with their pros, cons and implications, and your recommendation. As full as the decision needs; a few lines for a small one. When the question asks the user to do something, everything needed to do it — text to paste, a command, values, file names — is in the chat as plain text, never only on the sheet. The sheet holds the choices, one short line each. **Any price you state — money paid to a provider — is looked up, not remembered**: find it on a current source, name the source, and say it is an estimate the user must confirm with the provider — you are not responsible for it. If you cannot find it, say so; never give an old or guessed price.
+- **Brief before you ask.** Before any question, first say you are going to ask. Give the context and the content, so the user understands. This is the last thing you write, after all tool calls. Then ask the question on a sheet. In a run, write that briefing as a message of its own, with no tool call, and end the turn there: text beside a tool call can reach the user cut down to one line, and the turn-end check sends you on to the sheet. End the briefing with a short block — your recommendation, and anything to act on — and put each option's cost in its description on the sheet as well: the sheet opens over the end of a long message. That briefing — for a question on a sheet wherever one can be shown, typed where none can — says in the chat, in plain business words, what the user needs to decide or act without having watched the work: what the work is and where it stands, what is to be decided and why now, the content it is about, the options with their pros, cons and implications, and your recommendation. As full as the decision needs; a few lines for a small one. When the question asks the user to do something, everything needed to do it — text to paste, a command, values, file names — is in the chat as plain text, never only on the sheet. The sheet holds the choices: a short label each, with its key and its cost in the description. **Any price you state — money paid to a provider — is looked up, not remembered**: find it on a current source, name the source, and say it is an estimate the user must confirm with the provider — you are not responsible for it. If you cannot find it, say so; never give an old or guessed price.
 - **Minimal diff.** Prefer modifying existing code over adding new files/abstractions. Match the project's existing conventions. No premature generalization (YAGNI).
 - **Respect project safety rules.** Read CLAUDE.md for documented invariants, secrets, and irreversible/production operations. Never read or print secret files (e.g. `.env`). The MetaXoTRail safety hook asks the operator to confirm destructive git/`rm` operations — it does not hard-block them, so a confirmation prompt is not permission you have already been given; during a run, commands that would undo credited work are refused outright.
 
@@ -16,6 +16,12 @@ A finding is BLOCKING if, shipped as it stands, the system would do something wr
 
 - **High** and **Medium** — blocking, by that test: the system would grant a permission it should refuse, credit work not done, lose or corrupt data or a record, fail open, break a documented project invariant about what the system does, or state something false that someone would build from. The two letters behave identically; both must be fixed before proceeding, and a reviewer unsure between them may pick either.
 - **Low** — true, worth recording, changes nothing anyone does: style, naming, minor cleanup, and how a document reads. May be logged and carried forward.
+
+**The test-plan review (41) applies this test through three cases in its own skill**: there a MEDIUM is only a
+test that cannot be carried out as written, a P0 or P1 rule or changed behaviour with no test, or a P0 test that
+would pass on broken code; a HIGH only a P0 test that needs live or real users' data; everything else is LOW. Those
+cases grade the plan's own tests: a defect it shows in the milestone's code, the plan or the map is graded by the test
+above and orders the rollback.
 
 A review **pass is "clean"** only when it surfaces **no High and no Medium** findings. Review loops repeat until a pass is clean (Low-only or none) — there is no fixed iteration cap; never proceed with open High/Medium items.
 
@@ -59,9 +65,10 @@ Applying-and-rechecking is automatic and does NOT require asking the user each l
 - **Regression sweep.** Run the existing test suite to confirm the fix didn't break anything else.
 
 ## Reporting honestly on things nobody can check
-Inside a run, each review's close records who wrote it: the reviewer's own agent (`independent`) or the
-orchestrator, the main Claude session driving the run. Only a clean `independent` close completes the step;
-the orchestrator's own round never does. Outside a run, nothing checks the mark — say plainly when a
+Inside a run, each review's close records who wrote it. Since 1.1.0 every round is the reviewer's own
+agent (`independent`), the rounds after a fix included; a round written by the orchestrator, the main Claude
+session driving the run, exists only in a run begun under an older release, and never completes the step.
+Only a clean `independent` close does. Outside a run, nothing checks the mark — say plainly when a
 review was your own.
 A review closes as independent only when the close comes from inside the reviewer's own agent —
 nobody types that claim; the hook reads `agent_id` off the call, which Claude Code populates only
@@ -85,6 +92,14 @@ type the command. Those are worth exactly what your honesty is worth, and they a
   green light and a false one.
 - The same applies to every claim the gate can't check — test counts, "all P0 pass", whether a
   command was actually run. **Never report an outcome you did not observe.**
+
+## When the operator has to do something by hand
+
+Give it as four lines, so they can act without asking back:
+1. **Start:** what to open or start first.
+2. **Run:** the exact command, or the exact clicks, to copy.
+3. **Look at:** what they should see when it works.
+4. **Stop:** how to stop or close it afterwards.
 
 ## Output discipline
 - Read files fully before summarizing them.

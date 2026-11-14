@@ -59,7 +59,7 @@ The game is the development process, turned into rules a machine enforces:
 
 | In a game | In Meta-XoT-OSS-Rail |
 |---|---|
-| The rules, which no player can break | **Hooks**: Claude Code runs them on every command and file write (`Bash`, `Write`, `Edit`, `NotebookEdit`), when you answer, and at the end of every turn, and they refuse the moves the process does not allow (see [Limits](#limits)) |
+| The rules, which no player can break | **Hooks**: Claude Code runs them on every command and file write (`Bash`, `Monitor`, `Write`, `Edit`, `NotebookEdit`), before every multiple-choice question, when you answer, and at the end of every turn, and they refuse the moves the process does not allow (see [Limits](#limits)) |
 | The levels, played in order | **The steps**: understand the code, plan, build one part at a time, test it |
 | The points | **The score**: a number for each step, which rises as that step and every step after it are completed; a review step completes only when an independent reviewer passes it, or when you accept it: starting from your own notes or plan, or closing it when the pipeline asks you |
 | The referee | **A separate reviewer** for every step, running in its own agent, which cannot edit what it reviews |
@@ -308,7 +308,8 @@ How each review works:
   fixes them and the review runs again, until it passes.
 - **Only an independent pass, or your own acceptance, counts.** Only a pass from an independent reviewer, or
   your own acceptance of the step (starting from your notes or plan, or closing it when the pipeline asks you),
-  completes it: Claude may check its own fix between rounds, but its own check never earns the points.
+  completes it. Every review round is independent, the rounds after a fix too: Claude does not check its
+  own fix between rounds.
 
 ### When something goes wrong
 
@@ -328,15 +329,31 @@ How each review works:
   from your own terminal, git refuses any command that would remove a commit (moving a branch back,
   deleting it); it does not stop commands that throw away changes not yet committed, such as
   `git checkout -- .` or `git clean`. Outside a run, some of them from Claude — such as `git reset --hard`,
-  `git rebase`, `git clean -f` and `rm -r` — ask you to confirm first.
+  `git rebase`, `git clean -f` and `rm -r` — ask you to confirm first. `rm -r` of things inside Claude's own scratch
+  folder for the session does not ask.
+- **The disk fills up while the run's records are written.** The run's check of its records can fall behind
+  its log. Claude tells you so, and a repair command fixes it once you approve it. At the end of a run, such
+  damage stops the run from being filed away until it is repaired or you choose to end the run.
 
 **With you:**
 
-- **Claude needs a decision only you can make.** It asks once, on a short list of choices, and
-  waits. Nothing moves until you answer. If you write your own answer under "Other" on the list:
+- **Claude needs a decision only you can make.** It first explains, in a message of its own, what you are
+  deciding and what each choice gains and costs; then it asks once, on a short list of choices, and
+  waits. If Claude ends its turn on a typed question instead, it is sent back once to ask it on a list. Nothing moves until you answer. If you write your own answer under "Other" on the list:
   when Claude asked for information, it is your answer; when it asked you to choose, Claude tells you
   how it reads your words and asks you to click. Anything else you type in the chat is discussion:
-  Claude answers it, and the question still waits.
+  Claude answers it, and the question still waits. On a list in several parts, the parts you clicked stay
+  answered; only a part you answered in your own words is asked again.
+- **Claude needs a command the guards refuse,** such as `git reset --hard` or `rm -r`. It explains, in a message of
+  its own, what the command does, why it is needed and whether it recommends it. Then a list asks *Run this
+  command?* with the exact command, and **Run it** or **Do not run it**. Your click on **Run it** approves that
+  exact command once, within two minutes, in the run's own window. It works in the auto, default and acceptEdits
+  modes; in any other mode, you type the command into the chat on its own, which also works everywhere. Only your
+  click counts: a helper agent or another window cannot approve.
+- **You want the run to pause.** Say so, at any step, a review included. Claude asks you a question that holds the
+  run, and nothing moves until you answer it.
+- **Free disk space falls under 5 GB.** When the next step opens, Claude asks you once per part of the plan, or
+  again if the free space has halved. It never refuses to go on.
 - **You already have notes or a plan.** Claude can start from them, at the step they reach. The
   steps you skip are marked in the history as attested by you, not checked.
 - **You close the window, or start a new one.** The run waits. In the new window, Claude asks you
@@ -354,7 +371,10 @@ By then:
   yourself.
 - **The run's history is kept.** Ask Claude for the run's report to see every step, your answers,
   and which steps rest on your word rather than a check.
-- **To file the run away,** type `/metaxotrail:94-clean-process`.
+- **Your backlog is updated, and the run is filed away by Claude.** If the request named a backlog file,
+  Claude marks each item the run delivered, adds the findings the run left for later, and shows you the
+  change, uncommitted. Then it files the run away, and the project is quiet again.
+  `/metaxotrail:94-clean-process` stays your own command, for a run you end by hand.
 
 ## Using the skills on their own
 
@@ -402,7 +422,7 @@ run and are not in your menu.
 | `/metaxotrail:91-challenge` | a hard look at Claude's own last answer |
 | `/metaxotrail:92-fix` | apply a review's findings |
 | `/metaxotrail:93-rollback` | inside a run only: redo an earlier step a review found wrong |
-| `/metaxotrail:94-clean-process` | end a run and file its records away |
+| `/metaxotrail:94-clean-process` | end a run by hand and file its records away; a run that reaches its target is filed by Claude, after it updates the backlog |
 
 Every command starts with `metaxotrail:` because Claude Code puts a plugin's name in front of its
 commands, so two plugins never clash. The skills' own text names them without it, as `/00-ship`. Each step also has a `-gated` version that runs only inside a
@@ -412,18 +432,27 @@ run; it is not in your menu.
 
 **Hooks.** It registers hooks on Claude Code's events:
 
-- before every `Bash`, `Write`, `Edit` and `NotebookEdit` call, a guard that refuses writes to the run's
-  records, to the plugin's hook scripts and to `.git/` in every project, and, while a run is live, writes to the code
-  while it is frozen and commands that would undo or delete finished work;
-- before every `Bash` call, a second guard that asks you to confirm commands such as
+- before every `Bash`, `Monitor`, `Write`, `Edit` and `NotebookEdit` call, and before every multiple-choice
+  question, a guard that refuses writes to the run's records, to the plugin's hook scripts and to `.git/` in every
+  project, and, while a run is live, writes to the code while it is frozen and commands that would undo or delete
+  finished work;
+- before every `Bash` and `Monitor` call, a second guard that asks you to confirm commands such as
   `git reset --hard`, `git push --force` and `rm -r`;
+- if one of these two guards cannot run at all (a missing Python, a broken file), every command, file write and
+  question is refused rather than let through unguarded. To get out: in a terminal, outside Claude
+  Code, run `claude plugin disable metaxotrail`, start Claude Code again, reinstall the plugin, and run
+  `claude plugin enable metaxotrail`. The end-of-turn check is not set this way, so it cannot trap a turn;
 - when you send a message, and when you click a choice, a hook that records your answer;
 - when Claude tries to end its turn, a check that refuses while the target is not reached;
 - when a session starts, a short note on where the run stands.
 
 **Files and commits.**
 
-- `.metaxotrail/` in the project: the run's records. It holds its own `.gitignore`, so git ignores it.
+- `.metaxotrail/` in the project: the run's records. It holds its own `.gitignore`, so git ignores it. Among them,
+  `permissions.log` lists every approval that was used: the command, its time, and whether you clicked or typed it.
+  An approval that lapses unused leaves no line.
+- Claude's scratch folder for the session, under the system's temporary folder: the run empties it each time a part
+  of the plan is delivered, and says how much space that freed.
 - `WORKING.md` and `TEST_RESULTS.md` in the project root: the run's working documents.
 - `~/.claude/metaxotrail-anchor/`: one small file per run, which lets the run tell if its records
   were rebuilt.
@@ -455,7 +484,8 @@ Claude to search the web, as Claude Code can do in any session.
   step has its own review agent, and a review with findings runs again after the fix.
 - It works in Claude Code only, by design: its `bin/` folder keeps claude.ai and Cowork from installing it — claude.ai's
   chat does not run its hooks, so a run there could not be guarded, and Cowork is not tested.
-- It is tested on macOS. Linux and Windows are not tested.
+- It is tested on macOS. Linux and Windows are not tested. On Windows, two writes to the run's records at the same
+  moment are not kept apart.
 - After an update, the conversation that was open keeps the old version's instructions. Quit Claude Code and
   start a new conversation (see Updating).
 

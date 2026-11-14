@@ -128,19 +128,48 @@ def _read_event(raw, number, path):
 
 
 def append_event(project_path, event):
-    events = read_log(project_path)
+    lock = _append_lock(project_path)
     try:
-        E.append(events, event)
-    except E.BadEvent as exc:
-        raise BadBooks("that event may not be appended: %s" % exc)
-    path = os.path.join(address(project_path), LOG)
-    event = dict(event, **{D.PREV: D.head(events)})
-    line = json.dumps(event, sort_keys=True)
-    _read_event(line, len(events) + 1, path)
-    with open(path, "a") as handle:
-        handle.write(line + "\n")
-    _anchor(events[0]["run_hash"], D.link(D.head(events), event))
-    return event
+        events = read_log(project_path)
+        try:
+            E.append(events, event)
+        except E.BadEvent as exc:
+            raise BadBooks("that event may not be appended: %s" % exc)
+        path = os.path.join(address(project_path), LOG)
+        event = dict(event, **{D.PREV: D.head(events)})
+        line = json.dumps(event, sort_keys=True)
+        _read_event(line, len(events) + 1, path)
+        with open(path, "a") as handle:
+            handle.write(line + "\n")
+        stored = anchored(events[0]["run_hash"])
+        if stored is None or stored == D.head(events):
+            _anchor(events[0]["run_hash"], D.link(D.head(events), event))
+        return event
+    finally:
+        if lock is not None:
+            lock.close()
+
+
+APPEND_LOCK = "append.lock"
+try:
+    import fcntl as _fcntl
+except ImportError:
+    _fcntl = None
+
+
+def _append_lock(project_path):
+    if _fcntl is None:
+        return None
+    try:
+        handle = open(os.path.join(address(project_path), APPEND_LOCK), "a")
+    except (OSError, BadBooks):
+        return None
+    try:
+        _fcntl.flock(handle.fileno(), _fcntl.LOCK_EX)
+    except OSError:
+        handle.close()
+        return None
+    return handle
 
 
 ANCHORS = os.path.join(os.path.expanduser("~"), ".claude", "metaxotrail-anchor")
@@ -151,11 +180,18 @@ def anchor_path(run_hash):
 
 
 def _anchor(run_hash, value):
+    path = anchor_path(run_hash)
+    temp = path + ".tmp"
     try:
         os.makedirs(ANCHORS, exist_ok=True)
-        with open(anchor_path(run_hash), "w") as handle:
+        with open(temp, "w") as handle:
             handle.write(value)
+        os.replace(temp, path)
     except OSError:
+        try:
+            os.remove(temp)
+        except OSError:
+            pass
         return None
     return value
 
@@ -168,9 +204,32 @@ def anchored(run_hash):
         return None
 
 
+def anchor_state(project_path):
+    events = read_log(project_path)
+    broken = D.verify(events)
+    if broken:
+        return ("broken", broken)
+    stored = anchored(events[0]["run_hash"])
+    late = D.behind(events, stored)
+    if late:
+        return ("behind", late)
+    mismatch = D.against_anchor(events, stored)
+    return ("rebuilt", mismatch) if mismatch else None
+
+
+def behind_words(n):
+    return ("anchor behind by %d event%s — the log and its chain hold, and the head mirrored outside the project was "
+            "not moved, as when a disk was full; `pipeline.py anchor`, on the operator's approval, moves it to the "
+            "head" % (n, "" if n == 1 else "s"))
+
+
 def damage(project_path):
     events = read_log(project_path)
-    return D.verify(events) or D.against_anchor(events, anchored(events[0]["run_hash"]))
+    stored = anchored(events[0]["run_hash"])
+    late = D.verify(events) is None and D.behind(events, stored)
+    if late:
+        return behind_words(late)
+    return D.verify(events) or D.against_anchor(events, stored)
 
 
 def cut_ticket(project_path, step_num, milestone):

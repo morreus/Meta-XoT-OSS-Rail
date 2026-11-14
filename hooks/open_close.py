@@ -1,3 +1,4 @@
+import re
 import sys
 
 import events as E
@@ -22,17 +23,7 @@ def _is_review(step):
 
 
 def writer_at_open(step, ms, events):
-    if not _is_review(step):
-        return "orch"
-
-    rounds = loop_of(step, ms, events)
-    if not rounds:
-        return "INDEPENDENT"
-
-    last = rounds[-1]
-    if last.get("writer") == "orch" and last.get("h") == 0 and last.get("m") == 0:
-        return "INDEPENDENT"
-    return "orch"
+    return "INDEPENDENT" if _is_review(step) else "orch"
 
 
 def _loop_start(events):
@@ -77,6 +68,117 @@ def missing_sections(step, path):
         if line.startswith("#"):
             headings.add(line.lstrip("#").strip())
     return [head for head in wanted if head not in headings]
+
+
+TEST_TABLE = ("ID", "P", "Covers", "Precondition, and how it is arranged", "Steps", "Pass when", "Evidence",
+              "Stop step")
+PLAN_HEADING = re.compile(r"Test plan of ([^\s:]+)(?::.*)?\Z")
+TESTED = "What is tested"
+SEPARATOR_CELL = re.compile(r":?-+:?\Z")
+ROW_PIPE = re.compile(r"(?<!\\)\|")
+
+
+def _plan_of(heading):
+    found = PLAN_HEADING.match(heading)
+    return found.group(1) if found and E.MS_ID_RE.match(found.group(1)) else None
+
+
+def _near_miss(heads, ms):
+    named = re.compile(r"test plan of %s(?![0-9])" % re.escape(ms.lower()))
+    return next((h[2] for h in heads if named.search(h[2].lower()) and not h[2].lower().startswith("superseded")),
+                None)
+
+
+def _headings(text):
+    found = []
+    for index, raw in enumerate(text.splitlines()):
+        line = raw.strip()
+        if line.startswith("#"):
+            found.append((index, len(line) - len(line.lstrip("#")), line.lstrip("#").strip()))
+    return found
+
+
+def _cells(line):
+    inner = line.strip()
+    inner = inner[1:] if inner.startswith("|") else inner
+    if inner.endswith("|") and not inner.endswith("\\|"):
+        inner = inner[:-1]
+    return [cell.strip() for cell in re.split(r"(?<!\\)\|", inner)]
+
+
+def _tested_section(text, ms):
+    heads = _headings(text)
+    if ms is None:
+        tested = [h for h in heads if h[2] == TESTED]
+        if not tested:
+            return None, "no heading `%s`" % TESTED
+        if len(tested) > 1:
+            return None, ("`%s` stands %d times — remove the old plan's or rename it `Superseded: %s`"
+                          % (TESTED, len(tested), TESTED))
+        start = tested[0]
+    else:
+        mine = [k for k, h in enumerate(heads) if _plan_of(h[2]) == ms]
+        if not mine:
+            near = _near_miss(heads, ms)
+            if near:
+                return None, ("the heading `%s` is not in the form `Test plan of %s` or `Test plan of %s: <title>`"
+                              % (near, ms, ms))
+            return None, "no heading `Test plan of %s`" % ms
+        if len(mine) > 1:
+            return None, ("`Test plan of %s` stands %d times — remove the old plan or rename it "
+                          "`Superseded test plan of %s`" % (ms, len(mine), ms))
+        start = None
+        for head in heads[mine[0] + 1:]:
+            if "test plan of" in head[2].lower():
+                break
+            if head[2] == TESTED:
+                start = head
+                break
+        if start is None:
+            return None, "no `%s` after `Test plan of %s`" % (TESTED, ms)
+    lines = text.splitlines()
+    end = next((h[0] for h in heads if h[0] > start[0] and h[1] <= start[1]), len(lines))
+    return lines[start[0] + 1:end], None
+
+
+def table_faults(path, ms):
+    if not _exists(path):
+        return ["no document at %s" % path]
+    section, fault = _tested_section(_text_of(path), ms)
+    if fault:
+        return [fault]
+    faults, ids, found = [], [], False
+    for index, line in enumerate(section):
+        if not ROW_PIPE.search(line) or tuple(_cells(line)) != TEST_TABLE:
+            continue
+        found = True
+        rule = section[index + 1] if index + 1 < len(section) else ""
+        cells = _cells(rule) if ROW_PIPE.search(rule) else []
+        if len(cells) != len(TEST_TABLE) or not all(SEPARATOR_CELL.match(cell) for cell in cells):
+            faults.append("the header has no separator row under it, `|%s`" % ("---|" * len(TEST_TABLE)))
+            continue
+        for number, row in enumerate(section[index + 2:], 1):
+            if not ROW_PIPE.search(row):
+                break
+            cells = _cells(row)
+            name = cells[0] or "row %d" % number
+            if len(cells) != len(TEST_TABLE):
+                faults.append("%s has %d cells, not %d" % (name, len(cells), len(TEST_TABLE)))
+            elif any(not cell for cell in cells):
+                faults.append("%s has an empty cell (%s)" % (name, TEST_TABLE[cells.index("")]))
+            if cells[0] and cells[0] in ids:
+                faults.append("%s stands twice" % cells[0])
+            ids.append(cells[0])
+    if not found:
+        return ["no table whose header is `| %s |`" % " | ".join(TEST_TABLE)]
+    return faults
+
+
+def _table_said(path, ms):
+    faults = table_faults(path, ms)
+    where = "under the heading `Test plan of %s`, " % ms if ms else ""
+    return ("the test table: %s — write, %sa `%s` section holding the table `| %s |`, one row per test"
+            % (faults[0] if faults else "?", where, TESTED, " | ".join(TEST_TABLE)))
 
 
 def run_hash_ok(run_hash, path):
@@ -367,7 +469,7 @@ def _lines_owed(step):
     target = worked_on(step)
     if V.repair_target(step) is not None or step in ASKS_BEFORE_CLOSING:
         return ("open questions",) if target in ASKS_BEFORE_CLOSING else ()
-    if target != step and target in SECTIONS:
+    if target != step and (target in SECTIONS or target == IMPLEMENT):
         return ("new facts",)
     return ()
 
@@ -386,11 +488,15 @@ def close_conditions(step, ms, events):
     if pattern == "B":
         return ("count",)
     if pattern == "C":
-        return ("row", "discharged", "tick") + _lines_owed(step)
+        return ("row", "discharged", "tick") + _lines_owed(step) + _table_owed(step)
     if step == IMPLEMENT:
         return ("fingerprint", "row") + _secrets_owed(step, events)
-    return (("artifact", "sections", "run hash", "row") + _lines_owed(step) + _secrets_owed(step, events)
-            + _code_owed(step, ms, events))
+    return (("artifact", "sections", "run hash", "row") + _lines_owed(step) + _table_owed(step)
+            + _secrets_owed(step, events) + _code_owed(step, ms, events))
+
+
+def _table_owed(step):
+    return ("test table",) if worked_on(step) == "40-test-plan" else ()
 
 
 def _secrets_owed(step, events):
@@ -439,6 +545,7 @@ def ANSWERS(step, ms, events, artifact, run_hash, row, count, changed, discharge
         "open questions": lambda: holds_line(document, OPEN_QUESTIONS % ticket),
         "secrets": lambda: secrets is not None and not secrets,
         "frozen code": lambda: code is not None and code == _stamped_digest(events, ms),
+        "test table": lambda: not table_faults(document, ms),
     }
 
 
@@ -474,7 +581,8 @@ def check_close(events, close, **conditions):
                           os.path.basename(str(conditions.get("document"))), HOW[c])
                        for c in short if c in LINES)
                + (" — " + _secrets_said(conditions.get("secrets")) if "secrets" in short else "")
-               + (" — " + _frozen_said(close.get("ms")) if "frozen code" in short else "")))
+               + (" — " + _frozen_said(close.get("ms")) if "frozen code" in short else "")
+               + (" — " + _table_said(conditions.get("document"), close.get("ms")) if "test table" in short else "")))
     return close
 
 

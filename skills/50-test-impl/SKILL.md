@@ -78,11 +78,14 @@ If a results file already exists, write INTO it below what is there, and never o
 overwriting.
 
 Per test: status, timestamp, an actual-vs-expected table, evidence, integrity flags, and any issues found (with severity per `_shared.md`).
+Each result names its row by the plan's ID, and quotes the row's *Pass when* cell as the expected — word for
+word, so the reviewer compares the result with the rule the plan wrote rather than with one rewritten here.
 
 ## PHASE 4: Run summary
 - Counts by status × priority (P0–P3).
 - **Failed** tests (brief reason). **Suspicious** tests (need human review). **Skipped / blocked** (reason).
 - Blocking issues. Release readiness: P0 and P1 status.
+- **Every service a test started, and that it was stopped** — one line each: what, how it was stopped, and what showed it stopped. A service left running is reported as such, not passed over.
 
 ---
 

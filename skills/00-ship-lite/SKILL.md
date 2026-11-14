@@ -31,13 +31,13 @@ differ:
 3. **Right-size guard — check once the map is written.** Lite is only for genuinely small, low-risk work.
    **If the map shows the change is bigger than expected, risky, or touches code that moves money,
    changes production data or cannot be undone, STOP and ask the operator to end this run (`question
-   end`, then `/94-clean-process`) and start `/00-ship` (full) instead** — a second run cannot start
-   while this one is live. Never use the lite chain on such code.
+   end`; on their `OVERRIDE END`, `archive --abandon`, then the backlog as `00-ship`'s *Before the run is filed*
+   says) and start `/00-ship` (full) instead** — a second run cannot start while this one is live. Never use the lite chain on such code.
 
 Everything else — the gate, the section checks, the `92-fix` loops, no push — is
 exactly as `00-ship` describes.
 
 ## Suggested `/goal`
 ```
-/goal Deliver «FEATURE» following the 00-ship-lite skill (which defers to the 00-ship skill) — read BOTH first. Step 1: do STEP 0 of 00-ship — brief me in the chat, then show me its sheet, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init lite`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. DONE only when `pipeline.py status` says the chain is complete and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 30 turns if blocked.
+/goal Deliver «FEATURE» following the 00-ship-lite skill (which defers to the 00-ship skill) — read BOTH first. Step 1: do STEP 0 of 00-ship — brief me in the chat, then show me its sheet, and WAIT for my click (or my number, where no sheet can be shown). Step 2: on my click, do the setup STEP 0 gives for the option I chose — `init lite`, adopting what that option names, or `bind` if the run is live — exactly as the 00-ship skill spells the command (the skill carries the path; a pasted line cannot). Then repeatedly: run `status`, work ONLY the open ticket — you MUST invoke the `<id>-gated` skill and follow its method, and close the ticket the way that skill's tail says. When `pipeline.py status` says the chain is complete, update the backlog as the 00-ship skill's section *Before the run is filed* says, then run `archive`. DONE only after `archive` has filed the run and you output a line starting SHIP-COMPLETE. If the pipeline holds the run on a question, show it to me once and WAIT in silence for my answer; then carry on to the target. Stop after 30 turns if blocked.
 ```

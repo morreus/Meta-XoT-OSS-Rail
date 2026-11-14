@@ -73,6 +73,16 @@ scenarios, the coverage matrix and the prioritisation go under **What is tested*
 and the honest *nothing to test* case under **What is not tested**; the commands, fixtures and
 preconditions under **How to run it**.
 
+**The plan's own heading.** Put the three headings after a heading naming the milestone, written once:
+`## Test plan of M2` (a title may follow a colon: `## Test plan of M2: the export`), the three one level
+deeper. The plan is found by that heading, wherever it stands; an earlier milestone's plan is never read
+for this one. Three more things:
+- **A plan with no milestones** writes no such heading, and keeps one *What is tested*.
+- **A plan redone after a rollback** removes the old one, or renames its heading `Superseded test plan of
+  M2` — or, with no milestones, `Superseded: What is tested` — so that only one plan answers to the name.
+- **A milestone with nothing to test** keeps the table's title row with no rows under it, and says why
+  under *What is not tested*.
+
 **Categories — use the ones the stack actually has** (from `stack_rules/<stack>.md`), e.g.:
 - **Automated** (unit/integration) in the project's framework (`pytest` / Unity Test Framework / `flutter test`).
 - **Reproducibility / determinism** — same input → same output / byte-identical artifact (data & pipelines).
@@ -81,17 +91,24 @@ preconditions under **How to run it**.
 
 **Coverage matrix** — areas × test type.
 
-**Per scenario** (T001, T002, …):
-| Field | Content |
-|-------|---------|
-| ID / Name | T0NN / descriptive |
-| Source | context map / plan / code / web |
-| Priority | P0 (critical) … P3 (low) |
-| Preconditions | required state/data — **and how you will arrange it** (see below) |
-| Steps | action → expected observable result |
-| Acceptance criteria | **measurable, pass/fail** — no "works correctly"; include perf/data thresholds where relevant |
-| Edge cases | null/empty/boundary/failure/concurrency |
-| Evidence | output / log excerpt / screenshot / metrics |
+**The tests: one table, one row per test**, under *What is tested*, with exactly these column names:
+
+| ID | P | Covers | Precondition, and how it is arranged | Steps | Pass when | Evidence | Stop step |
+|---|---|---|---|---|---|---|---|
+
+- **ID** — `T` and three digits: T001, T002, …; no ID twice.
+- **P** — P0 (critical) … P3 (low).
+- **Covers** — the plan's rule (`AR…`), the risk or the changed behaviour the test answers to, and the
+  edge it takes: null, empty, boundary, failure, concurrency.
+- **Precondition, and how it is arranged** — the starting state, **and how you will arrange it** (see below).
+- **Steps** — action → expected observable result.
+- **Pass when** — **measurable, pass/fail**: no "works correctly"; perf or data thresholds where relevant.
+- **Evidence** — the output, log excerpt, screenshot or metric that will show it.
+- **Stop step** — how a service the test starts is stopped and seen stopped, or `none`.
+
+Every cell is filled; a cell may hold several sentences. A pipe inside a cell is written `\|`, or it
+splits the cell. A fix of the plan then changes rows, and the next
+review reads the rows that changed.
 
 **Every precondition must be one you can ARRANGE.** For each scenario, say how its starting state
 comes about: a fixture, an emulator or test instance, a seeded local database, a mock. "Production
@@ -116,7 +133,11 @@ though it will run and leave the discovery to the person executing it.
 
 ## PHASE 3: Test-quality self-check (challenge your own plan)
 - Does every changed code path / branch have at least one test?
-- Are acceptance criteria pass/fail and objective — not "looks right"?
+- Is every *Pass when* cell pass/fail and objective — not "looks right"?
+- **Put three questions to every P0 row**, the three a review of the test plan blocks on: can it be run as
+  written — its precondition arranged, its steps carried out? Does each P0 or P1 rule of the plan, and each
+  behaviour the milestone changed, have a row? Would this row pass on broken code — name the break that would
+  slip through, and if one does, make the row catch it.
 - **Could the feature be broken and a test still pass?** (too-easy tests — fix them.)
 - Is every Project-Risk Touchpoint covered by a test?
 - Are edge cases and error paths covered, not just the happy path?
@@ -138,9 +159,10 @@ verify. Do not import "lessons" from elsewhere in the conversation.
 
 ## RULES
 1. **Evidence-based** — every test traces to context map / plan / code / web.
-2. **Measurable acceptance criteria only** — no vague "works".
+2. **A measurable *Pass when* only** — no vague "works".
 3. **Categorize honestly** — don't mark a human-judgment test as automated.
 4. **Prioritize by risk** — P0 covers the highest-impact scenarios.
 5. **No live/irreversible actions in tests** — for production or money-moving code (e.g. anything in the context map's Project-Risk Touchpoints), tests use dry-run / sandbox accounts / fixtures, never real payments, orders or production writes.
+6. **Every service a test starts has a stop step** — an emulator, a server, a database, a watcher: the plan names the step that stops it and how to see it stopped, so nothing is left open on the network after the run.
 
 Stop after creating the test plan. Do not execute tests.

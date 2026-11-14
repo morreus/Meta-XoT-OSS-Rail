@@ -18,6 +18,12 @@ except Exception:
 
 [ -z "$CMD" ] && exit 0
 
+# A COMMAND THE USER APPROVED IS NOT ASKED AGAIN. The Python guard lets it through on their
+# approval, typed or clicked; this asks it, by the exact text, and stands down. Any fault asks as before.
+if printf '%s' "$INPUT" | python3 "$(dirname "$0")/undo_block.py" --settled >/dev/null 2>&1; then
+  exit 0
+fi
+
 # Normalise before matching. Matching the raw text misses two whole classes of command:
 #   * `git -C <dir> reset --hard` — the optional-global-flag prefix could not span `-C <path>`
 #     because the path is a non-dash token, so a common flag like `-C` would hide every git rule.

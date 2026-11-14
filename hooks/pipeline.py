@@ -1,5 +1,9 @@
+import fnmatch
+import json
 import os
+import re
 import shlex
+import shutil
 import uuid
 
 import books as K
@@ -18,7 +22,7 @@ class BadCommand(ValueError):
     pass
 
 
-COMMANDS = ("init", "close", "status", "report", "question", "archive", "bind")
+COMMANDS = ("init", "close", "status", "report", "question", "archive", "bind", "anchor")
 
 INTERNAL = ("gate", "statedir", "reset")
 
@@ -73,6 +77,9 @@ def _undamaged(project):
         raise BadCommand("these books cannot be read: %s" % exc)
     if found is None:
         return None
+    if found.startswith("anchor behind"):
+        raise BadCommand("this close is refused while the %s. Ask them for that approval on a sheet; the refusal of "
+                         "`pipeline.py anchor` says how" % found)
     raise BadCommand("the records have been altered and this close would credit work on them: "
                      "%s.\nNothing here can repair that — `status` and `report` still read, so "
                      "look first, and `question end`, then `archive --abandon` on the operator's `OVERRIDE END`, "
@@ -109,6 +116,13 @@ def artifact_for(project, step):
     return None
 
 
+def document_for(project, step):
+    target = O.worked_on(step)
+    if target == O.IMPLEMENT and step != target:
+        return os.path.join(project, K.WORKING_DOCUMENT)
+    return artifact_for(project, target)
+
+
 def baseline_for(events):
     for event in reversed(events):
         if event.get("kind") == "close" and event.get(E.COMMIT):
@@ -130,7 +144,7 @@ def _evidence(project, events, step, record, ms=None):
         "secrets": O.secret_like(project) if step in O.SECRET_STEPS else None,
         "code": (O.code_digest(project) if "frozen code" in O.close_conditions(step, ms, events)
                  else None),
-        "document": artifact_for(project, O.worked_on(step)),
+        "document": document_for(project, step),
     }
 
 
@@ -142,7 +156,7 @@ def apply_answer(project, clock):
         return None
     if F.is_content(question):
         return None
-    if question.get("asks") == F.END:
+    if question.get("asks") in (F.END, F.HOLD):
         try:
             _honoured(events, question)
         except BadCommand as exc:
@@ -182,7 +196,8 @@ def _spend_by_refusing(project, clock, events, question, refusal):
         str(question.get("text")).split(" — your reply ")[0],
         reply[len(F.OTHER) + 1:] if F.is_other(said) else reply, why)
     try:
-        note = _ask(project, clock, question["asks"], question["ticket"], question["step"], text)
+        note = _ask(project, clock, question["asks"], question["ticket"], question["step"], text,
+                    talked=reply in ("%s %s" % (F.OTHER, _TALK_IT_OVER), "%s %s (Recommended)" % (F.OTHER, _TALK_IT_OVER)))
     except BadCommand:
         return ("%s\nThe run is no longer in the state that instruction answered, so nothing is "
                 "asked again and nothing is held — carry on from where the run stands" % refusal)
@@ -435,7 +450,8 @@ def close(project, clock, status, h=None, m=None, l=None, flag="", from_fork=Fal
     if refusal is not None:
         raise BadCommand("%s%s" % (note + "\n" if note else "", refusal))
     write_close(project, clock, events, event)
-    return "\n".join(filter(None, [note, _after(project, clock, ticket)]))
+    tidy = _empty_scratch(project) if _log(project)[-1].get("commit") else None
+    return "\n".join(filter(None, [note, tidy, _after(project, clock, ticket)]))
 
 
 def _hashed(project, fields):
@@ -607,6 +623,14 @@ def _stamped(project, clock, events, event):
 def _hold(project, clock, ticket, step, state, refusal):
     events = _log(project)
     waiting = F.waiting(events)
+    if (waiting is not None and waiting.get("asks") == F.HOLD and waiting.get("ticket") == ticket
+            and F.holds(events, waiting)):
+        note = "%s is not closed: the run is held on their stop, %s%s.\n%s" % (
+            ticket, waiting["qid"], "; and %s" % F.why_held(events, state, ticket, step)
+            if F.why_held(events, state, ticket, step) else "", _shown(events, waiting))
+        if refusal is not None:
+            raise BadCommand("%s\n%s" % (refusal, note))
+        return note
     text = (F.why_held(events, state, ticket, step) or refusal
             or (waiting.get("text") if waiting and waiting.get("ticket") == ticket else None))
     last = F.asked(events)
@@ -620,7 +644,10 @@ def _hold(project, clock, ticket, step, state, refusal):
     return note
 
 
-def question(project, clock, kind, text, *choices):
+def question(project, clock, kind, text, *choices, from_fork=False):
+    if kind == F.HOLD and from_fork:
+        raise BadCommand("`question hold` is refused from a subagent — a reviewer's voice is its findings. Run it "
+                         "from the main thread")
     options = _options(kind, choices)
     note = apply_answer(project, clock)
     events = _log(project)
@@ -632,10 +659,11 @@ def question(project, clock, kind, text, *choices):
                          "and end the turn; nothing new is asked meanwhile but `question end`.\n%s"
                          % (standing["qid"], standing.get("text"), _shown(events, standing)))
     held = F.waiting(events)
-    if kind == F.OBSERVE and held is not None and F.holds(events, held) and F.is_other(F.authority(events)):
+    if (kind in (F.OBSERVE, F.HOLD) and held is not None and F.holds(events, held)
+            and F.is_other(F.authority(events))):
         raise BadCommand("%s is a decision the operator answered in their own words, and it still holds the ticket — "
-                         "bring their words back on a new `question ask` box, not an observation, which would lift "
-                         "the hold" % held["qid"])
+                         "bring their words back on a new `question ask` box, not an observation or a hold, which "
+                         "would lift the hold" % held["qid"])
     lapsed = ("%s, the observation, is no longer waiting — say so in the chat before the new box" % held["qid"]
               if held is not None and held.get("asks") == F.OBSERVE else None)
     note = "\n".join(filter(None, [note, lapsed]))
@@ -679,7 +707,10 @@ def _options(kind, choices):
     return parts
 
 
-def _ask(project, clock, kind, ticket, step, text=None, options=None):
+_TALK_IT_OVER = "Talk it over first"
+
+
+def _ask(project, clock, kind, ticket, step, text=None, options=None, talked=False):
     events = _log(project)
     legal = (amendment_set(events) if kind == F.MISOPENED
              else F.legal(events, kind, ticket, step))
@@ -697,6 +728,11 @@ def _ask(project, clock, kind, ticket, step, text=None, options=None):
             **({E.OPTIONS: options} if options else {})))
     except K.BadBooks as exc:
         raise BadCommand("the books would not hold this question: %s" % exc)
+    import write_block as W
+    if F.sheetable({"asks": kind, "legal": list(legal), E.OPTIONS: options}):
+        import gate as _S8
+        W.write_sheet_state(project, {"qid": qid, "briefed": False, "shown": False,
+                                      "blocks": _S8.SHEET_BLOCKS if talked else 0})
     asked = {"asks": kind, "legal": list(legal), E.OPTIONS: options}
     return "\n".join(["%s — reply with%s" % (qid, _replies(asked))] + _costs(events, asked, ticket, step)
                      + [_BRIEF_FIRST])
@@ -704,9 +740,13 @@ def _ask(project, clock, kind, ticket, step, text=None, options=None):
 
 _NO_TEXT = "the run is waiting on you"
 
-_BRIEF_FIRST = ("Before the operator answers this, on a sheet or by typing, brief them in the chat, in this message: "
-                "what they need to decide or do — each option's pros, cons and cost, or the steps and how to check "
-                "them — and your recommendation (MetaXoTRail's rule \"Brief before you ask\").")
+_BRIEF_FIRST = ("Before any question, first say you are going to ask, with the context and the content, so the "
+                "user understands: brief them in the chat as a message of its own, with no tool call, and end the "
+                "turn there — what they need to decide or do: each option's pros, cons and cost, or the steps and "
+                "how to check them — and close with your recommendation and anything to act on; put each option's "
+                "cost in its description on the sheet as well; then open the sheet when the turn-end check sends "
+                'you on, or have the key typed where no sheet can be shown (MetaXoTRail\'s rule "Brief before you '
+                'ask").')
 
 
 def _shown(events, question):
@@ -846,7 +886,9 @@ def _open_following(project, clock, step, ms):
         if pending is not None:
             return _open_next(project, clock, _branch_opens_at(steps), pending)
     if position + 1 >= len(steps):
-        return "the chain is complete — nothing opens, and `archive` ends the run"
+        if _damaged_at_target(project, _log(project)):
+            return "every step is closed, but %s" % _target_ways_out(project)
+        return complete_words()
     return _open_next(project, clock, steps[position + 1], ms)
 
 
@@ -866,13 +908,103 @@ def milestone_for(events, step, ms):
     return ms
 
 
+def _empty_scratch(project):
+    import undo_block as U
+    import write_block as W
+    try:
+        with open(os.path.join(K.address(project), W.SCRATCH_RECORD)) as handle:
+            scratch = json.load(handle).get("dir")
+    except (OSError, ValueError, AttributeError, K.BadBooks):
+        return None
+    if not scratch:
+        return None
+    if not U._trusted_scratch(scratch, project):
+        return "the scratch folder %s was not emptied: it is not a session scratch folder this pipeline may clear" % scratch
+    freed, failed = 0, []
+    try:
+        names = os.listdir(scratch)
+    except OSError as exc:
+        return "the scratch folder %s was not emptied: %s" % (scratch, exc)
+    for name in names:
+        path = os.path.join(scratch, name)
+        size = _size(path)
+        try:
+            if os.path.isdir(path) and not os.path.islink(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+            freed += size
+        except OSError:
+            failed.append(name)
+    return "the scratch folder was emptied at delivery: %s freed%s" % (
+        _amount(freed), "; not removed: %s" % ", ".join(failed) if failed else "")
+
+
+def _size(path):
+    try:
+        if os.path.islink(path) or not os.path.isdir(path):
+            return os.lstat(path).st_size
+        total = 0
+        for root, _dirs, files in os.walk(path):
+            for name in files:
+                try:
+                    total += os.lstat(os.path.join(root, name)).st_size
+                except OSError:
+                    pass
+        return total
+    except OSError:
+        return 0
+
+
+def _amount(size):
+    for unit, step in (("GB", 1024 ** 3), ("MB", 1024 ** 2), ("KB", 1024)):
+        if size >= step:
+            return "%.1f %s" % (size / step, unit)
+    return "%d bytes" % size
+
+
+LOW_SPACE = 5 * 1024 ** 3
+SPACE_WORDS = "free disk space is "
+
+
+def _free_space(project):
+    try:
+        return shutil.disk_usage(project).free
+    except OSError:
+        return None
+
+
+def _space_hold(project, clock, ms):
+    try:
+        free = _free_space(project)
+        if free is None or free >= LOW_SPACE:
+            return None
+        events = _log(project)
+        if F.asking(events) is not None:
+            return None
+        asked = [e for e in events if e.get("kind") == "question" and e.get("asks") == F.HOLD
+                 and SPACE_WORDS in str(e.get("text", ""))]
+        if asked:
+            last = asked[-1]
+            figure = re.search(r"\((\d+) bytes\)", str(last.get("text", "")))
+            same = T.parse_ticket(last.get("ticket", ""))["milestone"] == (ms or "MX")
+            if same and figure and free > int(figure.group(1)) / 2:
+                return None
+        text = ("%s%s (%d bytes), under the 5 GB this pipeline asks about. Review copies, builds and test material may "
+                "fill the disk. Free some space and say to keep going, or stop here" % (SPACE_WORDS, _amount(free), free))
+        return "%s\n%s" % (text, question(project, clock, F.HOLD, text))
+    except (BadCommand, K.BadBooks, F.BadFloor, T.BadTicket, ValueError, KeyError):
+        return None
+
+
 def _open_next(project, clock, step, ms):
     ticket = _cut(project, clock, step, milestone_for(_log(project), step, ms))
     ms = T.parse_ticket(ticket)["milestone"]
     ms = None if ms == "MX" else ms
     if not O.needs_a_line(step, ms, _log(project)):
         return _closes_itself(project, clock, ticket, step, ms)
-    return "%s opened as %s" % (step, ticket)
+    space = _space_hold(project, clock, ms)
+    return "\n".join(filter(None, ["%s opened as %s" % (step, ticket), space]))
 
 
 def _closes_itself(project, clock, ticket, step, ms):
@@ -922,6 +1054,10 @@ def describe(project, events):
                                        "end`, then `archive --abandon` on the operator's "
                                        "`OVERRIDE END`, ends the run and says so on the record"]))
     if standing is None:
+        if _damaged_at_target(project, events):
+            return "\n".join(filter(None, [note, _damage_note(project), _target_ways_out(project)]))
+        if _at_target(events):
+            return "\n".join(filter(None, [note, _damage_note(project), complete_words()]))
         return "\n".join(filter(None, [note, _damage_note(project),
                                        "nothing is open: %s"
                                        % P.explain_open_failure(events, False)]))
@@ -940,21 +1076,37 @@ def describe(project, events):
                     % (held["qid"], held["text"], _replies(held))]
                    + _costs(events, held, held.get("ticket"), held.get("step"))))
         if held else None,
-        ("their reply to %s (not an answer): %s" % (held["qid"], other["text"][len(F.OTHER) + 1:]))
+        ("their reply to %s (not an answer): %s" % (held["qid"], other["text"][len(F.OTHER) + 1:].split(F.CLOSED)[0]))
         if held and other else None,
+        ("closed parts of %s, by their click: %s. Ask again only the part they answered in words, in a new question"
+         % (held["qid"], "; ".join("%s — %s" % (key, dict(F.keys(held)).get(key, "?"))
+                                  for key in F.closed_parts(other))))
+        if held and other and F.closed_parts(other) else None,
         ("\n".join(["asked %s (an observation, holds nothing): %s" % (observed["qid"], observed.get("text"))]
                    + _costs(events, observed, observed.get("ticket"), observed.get("step"))))
         if observed else None,
         ("answered %s: %s" % answer) if answer else None,
-        ("answered %s: %s — `archive --abandon` ends the run" % (F.asked(events)["qid"], F.END_FORM))
+        ("answered %s: %s — `archive --abandon` ends the run; right after it, %s"
+         % (F.asked(events)["qid"], F.END_FORM, filing_words()))
         if _end_authorised(events) else None,
         ("answered %s: %s — the run goes on" % (F.asked(events)["qid"], _kept_going(events)))
         if _kept_going(events) else None,
+        _approvals_line(project),
         "who may write: %s" % P.who_may_write(events, False),
         _frozen_line(events),
         None if held else "the line to append: %s" % O.line_at_open(ticket, step),
         _copy_line(project, events, standing),
         "score: %s" % (C.score(events),)]))
+
+
+def _approvals_line(project):
+    import undo_block as U
+    said = U.approvals(project)
+    if not said:
+        return None
+    last = said[-1]
+    return "approvals of guarded commands in this run: %d; the last, %s, %r at %s" % (
+        len(said), "by click" if last.get("source") == "click" else "typed", last.get("command"), last.get("at"))
 
 
 def _frozen_line(events):
@@ -1006,6 +1158,15 @@ def report(project, clock):
             continue
         rows.append("%-20s %-9s %-8s %s" % (event.get("step"), event.get("status"),
                                             event.get("ms") or "", _on_trust(event)))
+    import undo_block as U
+    rows += ["%-20s approved  %s %r at %s" % ("", "by click" if one.get("source") == "click" else "typed",
+                                               one.get("command"), one.get("at")) for one in U.approvals(project)]
+    rows += ["%-20s pipeline  %s%s at %s" % ("", one.get("command"),
+                                             " (behind %s, %s to %s)" % (one.get("behind"), str(one.get("old"))[:12],
+                                                                         str(one.get("new"))[:12])
+                                             if one.get("command") == "anchor moved" else
+                                             " (%s)" % one.get("damage") if one.get("damage") else "", one.get("at"))
+             for one in U.records(project) if one.get("source") == "pipeline"]
     return "\n".join(filter(None, [_damage_note(project),
                                    "run %s on the %s chain" % (events[0]["run_hash"],
                                                                events[0]["chain"])]
@@ -1035,6 +1196,8 @@ def _damage_note(project):
         found = K.damage(project)
     except K.BadBooks:
         return None
+    if found is not None and found.startswith("anchor behind"):
+        return found.upper()[:len("ANCHOR BEHIND BY")] + found[len("anchor behind by"):]
     return None if found is None else "THE RECORDS HAVE BEEN ALTERED — %s" % found
 
 
@@ -1054,7 +1217,7 @@ def _kept_going(events):
     except F.BadFloor:
         return None
     question = F.asked(events)
-    if question.get("asks") != F.END or said == F.END_FORM:
+    if question.get("asks") not in (F.END, F.HOLD) or said == F.END_FORM:
         return None
     after = events[events.index(question) + 1:]
     return None if [event for event in after if event.get("kind") == "close"] else said
@@ -1067,6 +1230,241 @@ def _end_authorised(events):
         return False
     after = events[events.index(F.asked(events)) + 1:]
     return said == F.END_FORM and not [event for event in after if event.get("kind") == "close"]
+
+
+FILING_SECTION = "Before the run is filed"
+
+
+def filing_path():
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "skills", "00-ship", "SKILL.md")
+
+
+def filing_words():
+    return "update the backlog as the section *%s* of %s says" % (FILING_SECTION, filing_path())
+
+
+def complete_words():
+    return "the chain is complete — nothing opens. Now %s; then `archive` ends the run" % filing_words()
+
+
+def _at_target(events):
+    try:
+        return C.score(events) == C.target(C.chain_of(events))
+    except (K.BadBooks, ValueError):
+        return False
+
+
+def _damaged_at_target(project, events):
+    try:
+        return C.score(events) == C.target(C.chain_of(events)) and K.anchor_state(project) is not None
+    except (K.BadBooks, ValueError):
+        return False
+
+
+def _anchor_case(project):
+    try:
+        state = K.anchor_state(project)
+    except K.BadBooks as exc:
+        return str(exc)
+    if state is None:
+        return "nothing"
+    return K.behind_words(state[1]) if state[0] == "behind" else state[1]
+
+
+def _target_ways_out(project):
+    state = K.anchor_state(project)
+    out = []
+    if state is not None and state[0] == "behind":
+        out.append("`pipeline.py anchor`, on the operator's approval, moves the anchor to the head; then %s, and "
+                   "`archive`" % filing_words())
+    out.append("`archive --abandon`, a guarded command, ends the run on the operator's approval and files its rows as "
+               "not vouched for; right after it, %s" % filing_words())
+    return "the run is at target, and its records are not vouched for. The way%s out: %s." % (
+        "s" if len(out) > 1 else "", "; or ".join(out))
+
+
+def _approved_now(project, words):
+    import undo_block as U
+    said = U.records(project)
+    if not said or said[-1].get("source") not in ("click", "typed"):
+        return False
+    last = said[-1]
+    import write_block as W
+    try:
+        fresh = W_age(last.get("at", ""), _now_text()) <= U.PERMISSION_MAX_AGE
+        segments = W._segments(str(last.get("command", "")))
+    except (TypeError, ValueError, W.Unreadable):
+        return False
+    return fresh and any(guarded_act(W._command_words(segment)) == words for segment in segments)
+
+
+def guarded_act(words):
+    words = _expanded(words)
+    for place, word in enumerate(words):
+        if word == "-m":
+            act = _act(words[place + 2:])
+            if act and _names_the_script(words[place + 1:place + 2], "pipeline"):
+                return act
+            continue
+        act = _act(words[place + 1:])
+        if not act:
+            continue
+        if (word.startswith("-m") and _names_the_script([word[2:]], "pipeline")
+                or _names_the_script([word], "pipeline.py", base=True)):
+            return act
+    return None
+
+
+def _act(rest):
+    first = rest[:1]
+    if first == ["anchor"]:
+        return "anchor"
+    if first == ["archive"] and "--abandon" in rest[1:]:
+        return "archive --abandon"
+    return None
+
+
+def _names_the_script(words, script, base=False):
+    if not words:
+        return False
+    pattern = (os.path.basename(words[0]) if base else words[0]).replace("[^", "[!")
+    return fnmatch.fnmatchcase(script, pattern) or fnmatch.fnmatchcase(script, pattern.lower())
+
+
+def _expanded(words):
+    out = []
+    for word in words:
+        forms = _braces(word) if "{" in word else [word]
+        out.extend([word] if forms is None else [form for form in forms if form or form == word])
+    return out
+
+
+BRACE_LIMIT = 64
+BRACE_STEPS = 200000
+
+
+class _TooRich(Exception):
+    pass
+
+
+def _braces(word, limit=BRACE_LIMIT):
+    stack, out, made, steps = [word], [], 0, [BRACE_STEPS]
+    try:
+        while stack:
+            form = stack.pop()
+            group = _first_group(form, limit, steps)
+            if group is None:
+                out.append(form)
+                continue
+            start, end, parts = group
+            made += len(parts)
+            if made > limit:
+                return None
+            stack.extend(reversed([form[:start] + part + form[end:] for part in parts]))
+    except _TooRich:
+        return None
+    return out
+
+
+_RANGE = re.compile(r"(-?\d+|[A-Za-z])\.\.(-?\d+|[A-Za-z])")
+
+
+def _first_group(form, limit, steps):
+    start = form.find("{")
+    while start >= 0:
+        level, commas, place = 1, [], start + 1
+        while place < len(form):
+            steps[0] -= 1
+            if steps[0] < 0:
+                raise _TooRich()
+            char = form[place]
+            if char == "{":
+                level += 1
+            elif char == "," and level == 1:
+                commas.append(place)
+            elif char == "}":
+                level -= 1
+                if level == 0:
+                    if commas:
+                        edges = [start] + commas + [place]
+                        return start, place + 1, [form[edges[k] + 1:edges[k + 1]] for k in range(len(edges) - 1)]
+                    parts = _range(form[start + 1:place], limit)
+                    if parts is not None:
+                        return start, place + 1, parts
+                    level = 1
+            place += 1
+        start = form.find("{", start + 1)
+    return None
+
+
+def _range(inside, limit):
+    ranged = _RANGE.fullmatch(inside)
+    if ranged is None:
+        return None
+    first, last = ranged.group(1), ranged.group(2)
+    if first.lstrip("-").isdigit() and last.lstrip("-").isdigit():
+        step = 1 if int(last) >= int(first) else -1
+        return [str(n) for n in range(int(first), int(last) + step, step)[:limit + 1]]
+    if first.isalpha() and last.isalpha():
+        step = 1 if ord(last) >= ord(first) else -1
+        return [chr(n) for n in range(ord(first), ord(last) + step, step)[:limit + 1]]
+    return None
+
+
+def W_age(then, now):
+    import write_block as W
+    return W._age(then, now)
+
+
+def _now_text():
+    import write_block as W
+    return W._now()
+
+
+def _record_line(project, clock, fields):
+    import undo_block as U
+    try:
+        run = _log(project)[0]["run_hash"]
+        with open(os.path.join(K.address(project), U.PERMISSIONS_LOG), "a") as handle:
+            handle.write(json.dumps(dict({"run": run, "at": clock()}, **fields), sort_keys=True) + "\n")
+    except (OSError, K.BadBooks, IndexError, KeyError, BadCommand):
+        pass
+
+
+def anchor(project, clock, from_fork=False):
+    if from_fork:
+        raise BadCommand("`anchor` is refused from a subagent — the anchor is the operator's to move")
+    lock = K._append_lock(project)
+    try:
+        return _anchor_locked(project, clock)
+    finally:
+        if lock is not None:
+            lock.close()
+
+
+def _anchor_locked(project, clock):
+    events = _log(project)
+    state = K.anchor_state(project)
+    if state is None:
+        return "the anchor agrees with the log — nothing to move"
+    if state[0] != "behind":
+        raise BadCommand("the anchor is not behind: %s. It is not moved over that — `archive --abandon` on the "
+                         "operator's approval ends the run" % state[1])
+    if not _approved_now(project, "anchor"):
+        raise BadCommand("`pipeline.py anchor` moves the anchor only on the operator's approval of the command itself; "
+                         "run it, and its refusal says how to ask them")
+    old = K.anchored(events[0]["run_hash"])
+    new = D_head(events)
+    K._anchor(events[0]["run_hash"], new)
+    _record_line(project, clock, {"command": "anchor moved", "source": "pipeline", "old": old, "new": new,
+                                  "behind": state[1]})
+    return "the anchor moved to the head: %s, %d event%s, from %s to %s" % (
+        "it was behind", state[1], "" if state[1] == 1 else "s", old[:12], new[:12])
+
+
+def D_head(events):
+    import ledger as D
+    return D.head(events)
 
 
 def archive(project, clock, abandon=False, from_fork=False):
@@ -1089,6 +1487,16 @@ def archive(project, clock, abandon=False, from_fork=False):
                          "dropped, and why>\"`, show them the question, and run `archive --abandon` "
                          "again once they have answered `OVERRIDE END`"
                          % (tuple(reached), chain, tuple(target)))
+    damaged = tuple(reached) == tuple(target) and _damaged_at_target(project, events)
+    if damaged and not abandon:
+        raise BadCommand("this run is at target, but its records are not vouched for: %s.\n%s"
+                         % (_anchor_case(project), _target_ways_out(project)))
+    if damaged and not _approved_now(project, "archive --abandon"):
+        raise BadCommand("`archive --abandon` at target, with the records not vouched for, runs only on the operator's "
+                         "approval of the command itself; run it, and its refusal says how to ask them")
+    case = _anchor_case(project) if damaged else None
+    if damaged:
+        _record_line(project, clock, {"command": "archive --abandon at target", "source": "pipeline", "damage": case})
     keep_copies(project, ending=True)
     try:
         K.end_run(project)
@@ -1096,8 +1504,11 @@ def archive(project, clock, abandon=False, from_fork=False):
         raise BadCommand("the run was not ended: %s" % exc)
     return "\n".join(filter(None, [
         note,
+        ("run ABANDONED AT TARGET: its records were not vouched for (%s), so its rows are filed as not vouched for"
+         % case) if damaged else
         ("run ABANDONED at %s, short of the %s chain's target %s"
-         % (tuple(reached), chain, tuple(target))) if abandon else "run archived at target"]))
+         % (tuple(reached), chain, tuple(target))) if abandon else "run archived at target",
+        ("Now %s — the run has ended, so the backlog file can be written." % filing_words()) if abandon else None]))
 
 
 def run(name, args, clock, project=None, from_fork=False):
@@ -1125,9 +1536,10 @@ def run(name, args, clock, project=None, from_fork=False):
                                        from_fork=from_fork),
                 "status": lambda: status(project, clock),
                 "report": lambda: report(project, clock),
-                "question": lambda: question(project, clock, *args),
+                "question": lambda: question(project, clock, *args, from_fork=from_fork),
                 "archive": lambda: archive(project, clock, abandon="--abandon" in args,
-                                           from_fork=from_fork)}[name]()
+                                           from_fork=from_fork),
+                "anchor": lambda: anchor(project, clock, from_fork=from_fork)}[name]()
     except TypeError as exc:
         raise BadCommand("`%s` was given arguments it cannot take: %s" % (name, exc))
 

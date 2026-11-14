@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import shlex
 import sys
 
 import books as K
@@ -12,6 +14,14 @@ ALLOW, DENY = W.ALLOW, W.DENY
 PERMISSION = "authorised.json"
 
 PERMISSION_MAX_AGE = 120
+
+REFUSED = "refused.json"
+GUARD_PREFIX = "Run this command? "
+RUN_IT, DO_NOT_RUN = "Run it", "Do not run it"
+PERMISSIONS_LOG = "permissions.log"
+PERMITTED = "allowed on the operator's approval"
+ALLOWED = "allowed.json"
+ALLOWED_MAX_AGE = 10
 
 BLOCKED_GIT = ("reset", "rebase", "checkout", "switch", "restore", "clean", "stash",
                "rm", "pull")
@@ -47,6 +57,11 @@ _CONFIG_ALLOWED = ("user.name", "user.email")
 
 
 _EXPORTERS = ("export", "declare", "typeset", "set")
+
+SAFE_NAMES = ("TMPDIR", "TZ", "LANG", "LC_ALL")
+SET_FLAGS = "eux"
+SET_NAMES = ("errexit", "nounset", "pipefail")
+NAMING_WORDS = ("pgrep", "which", "man", "whatis", "whereis", "apropos", "type")
 
 _UNKNOWN = object()
 
@@ -131,7 +146,8 @@ def _opaque_config(word, value):
 
 
 def _git_refusal(words, prefix=(), exported=False):
-    if exported or [word for word in prefix if "=" in word and not word.startswith("-")]:
+    if exported or [word for word in prefix if "=" in word and not word.startswith("-")
+                    and word.split("=", 1)[0] not in SAFE_NAMES]:
         return ("this `git` command is run with something set in its environment, and the "
                 "environment is one of the places git reads its configuration from — including "
                 "`core.hooksPath`, which turns off the hook that refuses destructive updates, and "
@@ -213,6 +229,11 @@ def _refusal(command, project, anywhere=True):
             continue
         words = W._command_words(segment)
         prefix = segment[:len(segment) - len(words)]
+        if words and os.path.basename(words[0]) in NAMING_WORDS:
+            continue
+        why = _pipeline_refusal(words, project)
+        if why:
+            return why
         for index in range(len(words)) if anywhere else (0,):
             verb = os.path.basename(words[index])
             why = (_git_refusal(words[index:], prefix + words[:index], exported)
@@ -221,9 +242,101 @@ def _refusal(command, project, anywhere=True):
                    else None)
             if why:
                 return why
-        if words and words[0] in _EXPORTERS:
+        if words and words[0] in _EXPORTERS and not _harmless_export(words):
             exported = True
     return None
+
+
+def _scratch_only(command, project, scratch):
+    if not scratch or not _trusted_scratch(scratch, project):
+        return False
+    root = os.path.realpath(scratch)
+    try:
+        segments = W._segments(command)
+    except W.Unreadable:
+        return False
+    if not segments:
+        return False
+    for segment in segments:
+        words = W._command_words(segment)
+        if not words or words != list(segment) or os.path.basename(words[0]) != "rm":
+            return False
+        given = W._arguments(words[1:])
+        options = [word for word in given if word[:1] == "-"]
+        named = [word for word in given if word[:1] != "-"]
+        if not named or any(not RM_OPTIONS.match(word) for word in options) or given[:len(options)] != options:
+            return False
+        for target in named:
+            if W._expanded(target) or target.startswith("~") or "{" in target:
+                return False
+            real = os.path.realpath(os.path.join(project, target))
+            if not real.startswith(root + os.sep):
+                return False
+    return True
+
+
+RM_OPTIONS = re.compile(r"^-[rRfvd]+$")
+SCRATCH_SHAPE = re.compile(r"/claude-[0-9]+/[^/]+/[^/]+/scratchpad$")
+
+
+def _temp_tops():
+    import tempfile
+    return {os.path.realpath(top) for top in ("/tmp", "/private/tmp", tempfile.gettempdir())}
+
+
+def _linked_below_temp(scratch):
+    tops = _temp_tops()
+    path = scratch.rstrip("/")
+    while path and path != os.path.dirname(path) and os.path.realpath(path) not in tops:
+        if os.path.islink(path):
+            return True
+        path = os.path.dirname(path)
+    return False
+
+
+def _trusted_scratch(scratch, project):
+    real = os.path.realpath(scratch)
+    if (_linked_below_temp(scratch) or not SCRATCH_SHAPE.search(real)
+            or not any(real.startswith(top + os.sep) for top in _temp_tops())):
+        return False
+    root = os.path.realpath(scratch)
+    for held in {os.path.realpath(project), os.path.realpath(home(project) or project)}:
+        if held == root or held.startswith(root + os.sep):
+            return False
+    return True
+
+
+def _pipeline_refusal(words, project):
+    import pipeline as G
+    act = G.guarded_act(words)
+    if act == "anchor":
+        return ("`pipeline.py anchor` moves the head mirrored outside the project, which the records are checked "
+                "against")
+    if act == "archive --abandon":
+        try:
+            events = K.read_log(home(project) or project)
+        except K.BadBooks:
+            return None
+        if G._damaged_at_target(home(project) or project, events):
+            return ("`archive --abandon` at target, with the records not vouched for, files the run's rows as not "
+                    "vouched for")
+    return None
+
+
+def _harmless_export(words):
+    if words[0] == "export":
+        names = words[1:]
+        return bool(names) and all(word.split("=", 1)[0] in SAFE_NAMES for word in names)
+    if words[0] != "set" or len(words) < 2:
+        return False
+    rest = iter(words[1:])
+    for word in rest:
+        if not word.startswith("-") or len(word) < 2 or not set(word[1:]) <= set(SET_FLAGS + "o"):
+            return False
+        if "o" in word[1:]:
+            if word[1:].count("o") != 1 or not word.endswith("o") or next(rest, None) not in SET_NAMES:
+                return False
+    return True
 
 
 def _one_refused_command(text, project):
@@ -253,18 +366,34 @@ def live(project):
 def judge(command, project, payload, clock=None):
     if not live(project):
         return (ALLOW, "")
+    if _scratch_only(command, project, (payload or {}).get("scratchpad_dir")):
+        return (ALLOW, "")
     why = _refusal(command, project)
     if why is None:
         return (ALLOW, "")
-    if _permitted(command, project, clock or W._now):
-        return (ALLOW, "")
+    if _unmatched_git(command):
+        return (DENY, "%s, and the agent may not do that. **If undoing is what you want, use `git revert <sha>`.** If "
+                      "it really must be this command, run it bare first — %s — so that their approval can reach git's "
+                      "own hook; the refusal of the bare command says how to ask them." % (why, UNMATCHED))
+    if _permitted(command, project, clock or W._now, note=True):
+        return (ALLOW, PERMITTED)
     typeable = _one_refused_command(command, project)
+    sheet = bool(typeable) and (payload or {}).get("permission_mode") in W.CLICK_MODES \
+        and not (payload or {}).get("agent_id") and S.ours(home(project) or project, payload or {})
+    if sheet:
+        _store_refusal(project, typeable, clock or W._now)
     return (DENY, "%s, and the agent may not do that. **If undoing is what you want, use `git "
                   "revert <sha>` — it adds a commit rather than dropping one, so the records stay "
                   "true and nothing this run was credited for disappears.** If it really must be "
-                  "this command, ask the operator to type it into the chat, on its own; it counts once, "
-                  "within two minutes.%s"
-            % (why, "\n    " + typeable if typeable else
+                  "this command, ask the operator: %s%s"
+            % (why, ("on a sheet, or they type it into the chat on its own; it counts once, within two minutes. "
+                     "**The sheet:** first a message of its own, with no tool call, saying what the command does, "
+                     "why it is needed and your recommendation, ending the turn; then a sheet headed `guard`, its "
+                     "question exactly `%s<the command>`, options `%s` — its description what it does and why — and "
+                     "`%s`." % (GUARD_PREFIX, RUN_IT, DO_NOT_RUN)) if sheet else
+               "they type it into the chat on its own; it counts once, within two minutes.%s" % (
+                   " Run it on its own, not inside a longer line." if not typeable else ""),
+               "\n    " + typeable if typeable else
                " Tell the operator to type the command ITSELF, without the wrapper around it — a wrapped "
                "command is not one the hook that reads their messages recognises."))
 
@@ -275,7 +404,7 @@ def authorise(payload, project, clock):
         return None
     try:
         with open(permission_path(project), "w") as handle:
-            json.dump({"command": command, "at": clock()}, handle, sort_keys=True)
+            json.dump({"command": command, "at": clock(), "source": "typed"}, handle, sort_keys=True)
     except OSError:
         return None
     return command
@@ -299,17 +428,155 @@ def _recorded(project):
         return None
 
 
-def _permitted(command, project, clock):
+def _permitted(command, project, clock, note=False):
     record = _recorded(project)
     if not isinstance(record, dict) or record.get("command") != command.strip():
-        return False
+        return None
     try:
         if W._age(record.get("at", ""), clock()) > PERMISSION_MAX_AGE:
-            return False
+            return None
     except (TypeError, ValueError):
-        return False
+        return None
+    if note:
+        _note_allowed(project, record, clock)
     _spend(project)
+    return record
+
+
+def _books(project):
+    return K.address(home(project) or project)
+
+
+def _write_json(path, data):
+    try:
+        with open(path, "w") as handle:
+            json.dump(data, handle, sort_keys=True)
+    except OSError:
+        return None
+    return data
+
+
+def _read_json(path):
+    try:
+        with open(path) as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _store_refusal(project, command, clock):
+    _write_json(os.path.join(_books(project), REFUSED), {"command": command, "at": clock(), "briefed": False})
+
+
+def stored_refusal(project):
+    return _read_json(os.path.join(_books(project), REFUSED))
+
+
+def clear_refusal(project):
+    try:
+        os.remove(os.path.join(_books(project), REFUSED))
+    except OSError:
+        return False
     return True
+
+
+def record_click(project, command, clock):
+    clear_refusal(project)
+    return _write_json(permission_path(project), {"command": command, "at": clock(), "source": "click"})
+
+
+def _verbs(command):
+    try:
+        return [os.path.basename(word) for segment in W._segments(command)
+                for word in W._command_words(segment)[:1]]
+    except W.Unreadable:
+        return []
+
+
+UNMATCHED = ("`git` as its first word, written only with letters, digits, spaces, quotes and `- _ . / : @ ^ ~ = + , % { }`, "
+             "with no word starting with `~` or `=`, no `=~` or `:~`, and no braces holding `,` or `..`; for a message "
+             "with other letters, write it to a file and use `-F <file>`")
+PLAIN = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -_./:@^~=+,%{}\"'")
+NO_REF_MOVES = ("restore", "clean", "rm", "stash")
+def _makes_branch(words):
+    for word in words[2:]:
+        if word == "--":
+            return False
+        if word.startswith("-") and not word.startswith("--") and ("b" in word[1:] or "B" in word[1:]):
+            return True
+    return False
+
+
+def _unmatched_git(command):
+    command = command.strip()
+    try:
+        if len(W._segments(command)) != 1 or "git" not in _verbs(command):
+            return False
+        words = shlex.split(command)
+    except (W.Unreadable, ValueError):
+        return True
+    if not words or os.path.basename(words[0]) != "git":
+        return True
+    subcommand = _git_verb(words)
+    if subcommand in NO_REF_MOVES or (subcommand == "checkout" and not _makes_branch(words)):
+        return False
+    return (not set(command) <= PLAIN or any(word.startswith(("~", "=")) or "=~" in word or ":~" in word
+                                            for word in words)
+            or any("{" in word and ("," in word or ".." in word) for word in words))
+
+
+def _note_allowed(project, record, clock):
+    books = _books(project)
+    now = clock()
+    _write_json(os.path.join(books, ALLOWED), {"command": record.get("command"), "at": now})
+    if "git" in _verbs(record.get("command") or ""):
+        _write_json(os.path.join(books, R.PERMIT), {"at": now, "process": None, "command": record.get("command")})
+    try:
+        run = K.read_log(home(project) or project)[0]["run_hash"]
+        with open(os.path.join(books, PERMISSIONS_LOG), "a") as handle:
+            handle.write(json.dumps({"run": run, "at": now, "command": record.get("command"),
+                                     "source": record.get("source") or "typed"}, sort_keys=True) + "\n")
+    except (OSError, K.BadBooks, IndexError, KeyError):
+        pass
+
+
+def approvals(project):
+    return [line for line in records(project) if line.get("source") in ("click", "typed")]
+
+
+def records(project):
+    try:
+        run = K.read_log(project)[0]["run_hash"]
+        with open(os.path.join(K.address(project), PERMISSIONS_LOG)) as handle:
+            raw = [line for line in handle if line.strip()]
+    except (OSError, ValueError, K.BadBooks, IndexError, KeyError):
+        return []
+    lines = []
+    for line in raw:
+        try:
+            lines.append(json.loads(line))
+        except ValueError:
+            continue
+    return [line for line in lines if isinstance(line, dict) and line.get("run") == run]
+
+
+def settled(payload, now=None):
+    command = (payload.get("tool_input") or {}).get("command", "")
+    project = payload.get("cwd") or os.getcwd()
+    if _scratch_only(command, project, payload.get("scratchpad_dir")):
+        return True
+    books = _books(project)
+    for name, limit in ((PERMISSION, PERMISSION_MAX_AGE), (ALLOWED, ALLOWED_MAX_AGE)):
+        record = _read_json(os.path.join(books, name))
+        if not record or record.get("command") != command.strip():
+            continue
+        try:
+            if W._age(record.get("at", ""), (now or W._now)()) <= limit:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
 
 
 def _spend(project):
@@ -323,3 +590,10 @@ def _spend(project):
 def source_of(name):
     import inspect
     return inspect.getsource(globals()[name])
+
+
+if __name__ == "__main__" and sys.argv[1:] == ["--settled"]:
+    try:
+        sys.exit(0 if settled(json.load(sys.stdin)) else 1)
+    except Exception:
+        sys.exit(1)

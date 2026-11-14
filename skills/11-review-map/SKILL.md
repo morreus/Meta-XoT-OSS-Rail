@@ -29,6 +29,9 @@ against THAT:
   list is out of scope, even when it would serve the goal.
 - **What this does not cover:** a gap or an error in the map that would make someone build the
   requested work wrong is in scope, wherever in the codebase it sits — grade it by the test below.
+- **The `Backlog:` line under the request** — check it against the request: the file it names, each item the
+  request names with its row as that file has it now, and `Backlog: none` only when the request names no backlog.
+  A missing or wrong line is a finding.
 
 ### The map's own design is LOW; what the operator decides from is not
 The map describes the code as it is; the plan designs the new code. So:
@@ -76,8 +79,9 @@ finding however small the diff was.
 
 ### Fresh eyes — and what to do when you can't have them
 If you are reading this in your own agent, with none of the conversation that produced the work,
-you ARE the fresh eyes and nothing needs arranging — skip to the rules below. **Otherwise there is
-no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
+you ARE the fresh eyes and nothing needs arranging — skip to the rules below. Inside a run that is
+every round, the rounds after a fix included (since 1.1.0); **this section is for a review used
+outside a run, where there is no separate agent reviewing and no fresh eyes to arrange.** Do NOT try to delegate this to a subagent: nothing checks
 who reviewed what, so a delegated review buys you a claim nobody can verify and a failure mode
 (denied tool, nesting limit, an agent that dies silently). Review it yourself, do not skip it, and
 do not call it independent. Compensating rules:
