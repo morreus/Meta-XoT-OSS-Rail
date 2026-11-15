@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 — how to take part
+
+The plugin works exactly as in 1.1.1. The repository now has a guide to taking part (`CONTRIBUTING.md`), a code
+of conduct, and two forms for new issues: **Bug report**, which asks what you typed, what happened, what you
+expected and your Claude Code version, and **Idea**. A security problem is reported privately, from the same
+place. The README's "Contributing" points to them.
+
 ## 1.1.1 — clearer words
 
 The plugin works exactly as in 1.1.0: only texts changed. The README says what the pipeline, a backlog file and

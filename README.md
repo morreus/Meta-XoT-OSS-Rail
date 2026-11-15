@@ -556,9 +556,10 @@ any other commit.
 
 This is the first public version. It has been tested a lot, but it can get better from the experience
 of the people who use it, so your feedback is what it needs most. Open an
-[issue](https://github.com/morreus/Meta-XoT-OSS-Rail/issues) for a problem, an idea, or an improvement you
-would like to discuss: say what you typed, what happened, what you expected, and your Claude Code
-version. Pull requests cannot be merged here: to suggest a change, open an issue and describe it there.
+[issue](https://github.com/morreus/Meta-XoT-OSS-Rail/issues/new/choose) for a problem, an idea, or an
+improvement you would like to discuss, and choose **Bug report** or **Idea**: the form asks what it needs. Pull
+requests cannot be merged here: to suggest a change, open an issue and describe it there. More in
+[CONTRIBUTING](CONTRIBUTING.md); everyone is welcome, under the [code of conduct](CODE_OF_CONDUCT.md).
 
 To report a security problem, use **Report a vulnerability** on the repository's **Security and
 quality** tab, not a public issue.

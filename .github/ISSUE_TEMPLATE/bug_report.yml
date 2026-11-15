@@ -1,0 +1,63 @@
+name: Bug report
+description: Something did not work as you expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting it. Please leave out passwords, keys and private code.
+  - type: textarea
+    id: typed
+    attributes:
+      label: What you typed
+      description: The command or the request, for example `/metaxotrail:00-ship add a sign-in page`.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What Claude or the plugin did. Paste any message it showed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: claude_version
+    attributes:
+      label: Claude Code version
+      description: Type `claude --version` in a terminal.
+      placeholder: "2.1.319"
+    validations:
+      required: true
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin version
+      description: In Claude Code, type `/plugin` and look at metaxotrail. Leave it empty if you are not sure.
+      placeholder: "1.1.2"
+  - type: dropdown
+    id: os
+    attributes:
+      label: Your computer
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where you ran Claude Code
+      options:
+        - In a terminal
+        - In the VS Code extension
+        - Other
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else
