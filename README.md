@@ -562,13 +562,16 @@ requests cannot be merged here: to suggest a change, open an issue and describe 
 [CONTRIBUTING](CONTRIBUTING.md); everyone is welcome, under the [code of conduct](CODE_OF_CONDUCT.md).
 
 To report a security problem, use **Report a vulnerability** on the repository's **Security and
-quality** tab, not a public issue.
+quality** tab, not a public issue: [SECURITY](SECURITY.md) says what to write.
 
 ### Support
 
 Meta-XoT-OSS-Rail is free to use, at home or at work, under the Apache 2.0 licence. If it helps you,
-star the repository, or share a coffee with the author on [Ko-fi](https://ko-fi.com/stamatismetaxotos).
-For questions, the full suite, or working together, contact the author on [LinkedIn](https://www.linkedin.com/in/smetaxotos).
+star the repository. Tried it on a real feature? Tell the author what worked and where you still had to step
+in: open an [issue](https://github.com/morreus/Meta-XoT-OSS-Rail/issues/new/choose), comment on the
+[article on dev.to](https://dev.to/stamatios_metaxotos_77d5a/autonomous-software-development-for-non-developers-how-a-claude-code-plugin-enforces-the-m45),
+or write to the author on [LinkedIn](https://www.linkedin.com/in/smetaxotos). LinkedIn is also the place for
+questions, the full suite, or working together.
 
 ### Licence
 

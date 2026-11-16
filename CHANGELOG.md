@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.3 — feedback and security
+
+The plugin works exactly as in 1.1.2. The README's "Support" now asks for your feedback: open an issue, comment
+on the dev.to article, or write to the author on LinkedIn. The Ko-fi link is gone. A security policy
+(`SECURITY.md`) says how to report a security problem privately and what to write, and a pull request opened here
+explains that changes are suggested in an issue instead.
+
 ## 1.1.2 — how to take part
 
 The plugin works exactly as in 1.1.1. The repository now has a guide to taking part (`CONTRIBUTING.md`), a code

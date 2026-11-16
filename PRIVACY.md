@@ -26,7 +26,7 @@ section says how.
 **What goes to others.** The plugin runs inside Claude Code. Your messages, and what Claude reads in your project,
 go to Anthropic to run the model, as in any Claude Code session, under Anthropic's privacy policy. Some steps ask
 Claude to search the web, through Claude Code's own tools. If you push your project, open an issue, or contact the
-author, GitHub, Ko-fi or LinkedIn handle that under their own policies.
+author, GitHub, dev.to or LinkedIn handle that under their own policies.
 
 **Your rights.** We hold no data about you, so there is nothing for us to give you, correct or delete. The files on
 your computer you can read, change or delete yourself.
